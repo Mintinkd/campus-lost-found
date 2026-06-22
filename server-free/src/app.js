@@ -89,13 +89,22 @@ async function startServer() {
     await sequelize.authenticate();
     console.log(`数据库连接成功 (${config.db.dialect})`);
 
-    if (config.nodeEnv === 'development') {
-      await sequelize.sync({ alter: true });
-      console.log('数据库同步完成(开发模式: alter=true)');
-    } else {
-      await sequelize.sync({ alter: true });
-      console.log('数据库同步完成(生产模式: alter=true)');
+    if (config.db.dialect === 'postgres') {
+      const [results] = await sequelize.query(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'users' LIMIT 1"
+      );
+      if (results.length > 0) {
+        const col = results[0].column_name;
+        if (col === col.toLowerCase() && col.indexOf('_') === -1) {
+          console.log('[DB] 检测到旧schema(驼峰列名)，重建表...');
+          await sequelize.drop();
+          console.log('[DB] 旧表已删除');
+        }
+      }
     }
+
+    await sequelize.sync({ alter: true });
+    console.log('数据库同步完成');
 
     const schedule = require('node-schedule');
     schedule.scheduleJob('0 2 * * *', async () => {
