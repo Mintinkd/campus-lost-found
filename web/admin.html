@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校园失物招领 - 管理后台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6fa; color: #333; }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #2c3e50; color: #fff; padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; }
+    .sidebar h2 { padding: 0 20px 20px; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar a { display: block; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; transition: all .2s; }
+    .sidebar a:hover, .sidebar a.active { color: #fff; background: rgba(255,255,255,0.1); }
+    .main { margin-left: 220px; padding: 24px; flex: 1; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header .user-info { font-size: 14px; color: #666; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .stat-card .label { font-size: 13px; color: #999; margin-bottom: 8px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; color: #2c3e50; }
+    .card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    .card h3 { font-size: 16px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f8f9fa; font-weight: 600; color: #666; font-size: 13px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .badge-green { background: #e8f5e9; color: #2e7d32; }
+    .badge-red { background: #ffebee; color: #c62828; }
+    .badge-yellow { background: #fff3e0; color: #e65100; }
+    .badge-gray { background: #f5f5f5; color: #666; }
+    .btn { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #333; transition: all .2s; }
+    .btn:hover { background: #f5f5f5; }
+    .btn-primary { background: #1976d2; color: #fff; border-color: #1976d2; }
+    .btn-primary:hover { background: #1565c0; }
+    .btn-danger { background: #d32f2f; color: #fff; border-color: #d32f2f; }
+    .btn-danger:hover { background: #c62828; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .toolbar input, .toolbar select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .toolbar input { width: 240px; }
+    .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 360px; }
+    .login-box h2 { text-align: center; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 14px; margin-bottom: 6px; color: #555; }
+    .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .empty { text-align: center; padding: 40px; color: #999; }
+    .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+    .pagination .btn { min-width: 36px; text-align: center; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    var API_BASE = '';
+    var token = localStorage.getItem('admin_token') || '';
+    var currentSection = 'dashboard';
+
+    function getApiBase() {
+      if (window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE) return window.__APP_CONFIG__.API_BASE;
+      if (window.API_BASE) return window.API_BASE;
+      return '';
+    }
+
+    async function api(path, options) {
+      options = options || {};
+      var url = API_BASE.replace(/\/+$/, '') + path;
+      var headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      var res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
+      var data = await res.json();
+      if (data.code === 0) return data.data;
+      if (data.code === 1001 || data.code === 1002 || data.code === 4003) {
+        token = ''; localStorage.removeItem('admin_token');
+        renderLogin(); throw new Error(data.message);
+      }
+      throw new Error(data.message || '请求失败');
+    }
+
+    function renderLogin() {
+      document.getElementById('app').innerHTML = '<div class="login-page"><div class="login-box">' +
+        '<h2>管理后台登录</h2>' +
+        '<div class="form-group"><label>邮箱</label><input type="email" id="login-email"></div>' +
+        '<div class="form-group"><label>密码</label><input type="password" id="login-password"></div>' +
+        '<button class="btn btn-primary" style="width:100%;padding:12px;margin-top:8px" onclick="doLogin()">登录</button>' +
+        '</div></div>';
+    }
+
+    async function doLogin() {
+      var email = document.getElementById('login-email').value;
+      var password = document.getElementById('login-password').value;
+      try {
+        var data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+        token = data.token; localStorage.setItem('admin_token', token);
+        renderLayout();
+      } catch (e) { alert('登录失败: ' + e.message); }
+    }
+
+    function renderLayout() {
+      document.getElementById('app').innerHTML = '<div class="layout">' +
+        '<div class="sidebar"><h2>管理后台</h2>' +
+        '<a href="#" data-s="dashboard" class="active" onclick="switchSection(\'dashboard\',this)">仪表盘</a>' +
+        '<a href="#" data-s="items" onclick="switchSection(\'items\',this)">内容管理</a>' +
+        '<a href="#" data-s="users" onclick="switchSection(\'users\',this)">用户管理</a>' +
+        '<a href="#" data-s="roles" onclick="switchSection(\'roles\',this)">角色管理</a>' +
+        '<a href="#" data-s="logs" onclick="switchSection(\'logs\',this)">操作日志</a>' +
+        '<a href="#" onclick="token=\'\';localStorage.removeItem(\'admin_token\');renderLogin()">退出登录</a>' +
+        '</div><div class="main"><div id="content"></div></div></div>';
+      loadSection('dashboard');
+    }
+
+    function switchSection(s, el) {
+      event.preventDefault();
+      document.querySelectorAll('.sidebar a').forEach(function(a) { a.classList.remove('active'); });
+      if (el) el.classList.add('active');
+      loadSection(s);
+    }
+
+    async function loadSection(s) {
+      currentSection = s;
+      var c = document.getElementById('content');
+      if (s === 'dashboard') await loadDashboard(c);
+      else if (s === 'items') await loadItems(c);
+      else if (s === 'users') await loadUsers(c);
+      else if (s === 'roles') await loadRoles(c);
+      else if (s === 'logs') await loadLogs(c);
+    }
+
+    async function loadDashboard(c) {
+      try {
+        var stats = await api('/admin/dashboard');
+        c.innerHTML = '<div class="header"><h1>仪表盘</h1></div>' +
+          '<div class="stats">' +
+          '<div class="stat-card"><div class="label">总用户</div><div class="value">' + (stats.totalUsers || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">总物品</div><div class="value">' + (stats.totalItems || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">待认领</div><div class="value">' + (stats.pendingItems || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">已隐藏</div><div class="value">' + (stats.hiddenItems || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">已删除</div><div class="value">' + (stats.deletedItems || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">封禁用户</div><div class="value">' + (stats.bannedUsers || 0) + '</div></div>' +
+          '</div>';
+      } catch (e) { c.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; }
+    }
+
+    var itemPage = 1;
+    async function loadItems(c) {
+      try {
+        var keyword = document.getElementById('item-keyword') ? document.getElementById('item-keyword').value : '';
+        var data = await api('/admin/items?page=' + itemPage + '&pageSize=15&keyword=' + encodeURIComponent(keyword));
+        c.innerHTML = '<div class="header"><h1>内容管理</h1></div>' +
+          '<div class="toolbar"><input id="item-keyword" placeholder="搜索关键词..." value="' + keyword + '">' +
+          '<button class="btn btn-primary" onclick="itemPage=1;loadItems(document.getElementById(\'content\'))">搜索</button></div>' +
+          '<div class="card"><table><thead><tr><th>ID</th><th>类别</th><th>地点</th><th>状态</th><th>上报者</th><th>时间</th><th>操作</th></tr></thead><tbody>' +
+          data.list.map(function(item) {
+            var statusBadge = item.status === 'hidden' ? 'badge-gray' : item.status === 'pending' ? 'badge-green' : 'badge-yellow';
+            return '<tr><td style="font-size:12px">' + item.id.substring(0, 8) + '...</td><td>' + item.category + '</td><td>' + item.location + '</td>' +
+              '<td><span class="badge ' + statusBadge + '">' + item.status + '</span>' + (item.deletedAt ? ' <span class="badge badge-red">已删</span>' : '') + '</td>' +
+              '<td>' + (item.finder ? item.finder.nickname : '-') + '</td><td style="font-size:12px">' + new Date(item.foundTime).toLocaleDateString() + '</td>' +
+              '<td>' + (item.status !== 'hidden' ? '<button class="btn btn-sm" onclick="adminAction(\'hideItem\',\'' + item.id + '\')">隐藏</button>' : '<button class="btn btn-sm" onclick="adminAction(\'approveItem\',\'' + item.id + '\')">恢复</button>') +
+              (item.deletedAt ? '<button class="btn btn-sm btn-primary" onclick="adminAction(\'restoreItem\',\'' + item.id + '\')">还原</button>' : '<button class="btn btn-sm btn-danger" onclick="adminAction(\'softDeleteItem\',\'' + item.id + '\')">删除</button>') +
+              '</td></tr>';
+          }).join('') + '</tbody></table></div>' +
+          '<div class="pagination">' + (itemPage > 1 ? '<button class="btn" onclick="itemPage--;loadItems(document.getElementById(\'content\'))">上一页</button>' : '') +
+          '<span style="padding:8px">第 ' + itemPage + ' 页 / 共 ' + Math.ceil(data.total / 15) + ' 页</span>' +
+          (itemPage < Math.ceil(data.total / 15) ? '<button class="btn" onclick="itemPage++;loadItems(document.getElementById(\'content\'))">下一页</button>' : '') + '</div>';
+      } catch (e) { c.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; }
+    }
+
+    var userPage = 1;
+    async function loadUsers(c) {
+      try {
+        var data = await api('/admin/users?page=' + userPage + '&pageSize=15');
+        c.innerHTML = '<div class="header"><h1>用户管理</h1></div>' +
+          '<div class="card"><table><thead><tr><th>ID</th><th>昵称</th><th>邮箱</th><th>角色</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead><tbody>' +
+          data.list.map(function(u) {
+            return '<tr><td style="font-size:12px">' + u.id.substring(0, 8) + '...</td><td>' + u.nickname + '</td><td>' + (u.email || '-') + '</td>' +
+              '<td><span class="badge badge-yellow">' + (u.role ? u.role.name : '普通用户') + '</span></td>' +
+              '<td>' + (u.isBanned ? '<span class="badge badge-red">封禁</span>' : '<span class="badge badge-green">正常</span>') + '</td>' +
+              '<td style="font-size:12px">' + new Date(u.createdAt).toLocaleDateString() + '</td>' +
+              '<td>' + (u.isBanned ? '<button class="btn btn-sm" onclick="adminAction(\'unbanUser\',\'' + u.id + '\')">解封</button>' : '<button class="btn btn-sm btn-danger" onclick="adminAction(\'banUser\',\'' + u.id + '\')">封禁</button>') +
+              '</td></tr>';
+          }).join('') + '</tbody></table></div>' +
+          '<div class="pagination">' + (userPage > 1 ? '<button class="btn" onclick="userPage--;loadUsers(document.getElementById(\'content\'))">上一页</button>' : '') +
+          '<span style="padding:8px">第 ' + userPage + ' 页 / 共 ' + Math.ceil(data.total / 15) + ' 页</span>' +
+          (userPage < Math.ceil(data.total / 15) ? '<button class="btn" onclick="userPage++;loadUsers(document.getElementById(\'content\'))">下一页</button>' : '') + '</div>';
+      } catch (e) { c.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; }
+    }
+
+    async function loadRoles(c) {
+      try {
+        var roles = await api('/admin/roles');
+        c.innerHTML = '<div class="header"><h1>角色管理</h1></div>' +
+          '<div class="card"><table><thead><tr><th>角色名</th><th>权限</th><th>创建时间</th></tr></thead><tbody>' +
+          roles.map(function(r) {
+            return '<tr><td><span class="badge badge-yellow">' + r.name + '</span></td>' +
+              '<td style="font-size:12px">' + (r.permissions || []).join(', ') + '</td>' +
+              '<td style="font-size:12px">' + new Date(r.createdAt).toLocaleDateString() + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      } catch (e) { c.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; }
+    }
+
+    var logPage = 1;
+    async function loadLogs(c) {
+      try {
+        var data = await api('/admin/logs?page=' + logPage + '&pageSize=20');
+        c.innerHTML = '<div class="header"><h1>操作日志</h1></div>' +
+          '<div class="card"><table><thead><tr><th>管理员</th><th>操作</th><th>目标类型</th><th>目标ID</th><th>详情</th><th>时间</th></tr></thead><tbody>' +
+          data.list.map(function(l) {
+            return '<tr><td>' + (l.admin ? l.admin.nickname : '-') + '</td><td><span class="badge badge-yellow">' + l.action + '</span></td>' +
+              '<td>' + l.targetType + '</td><td style="font-size:12px">' + l.targetId.substring(0, 8) + '...</td>' +
+              '<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (l.detail || '-') + '</td>' +
+              '<td style="font-size:12px">' + new Date(l.createdAt).toLocaleString() + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      } catch (e) { c.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; }
+    }
+
+    async function adminAction(action, id) {
+      var methodMap = { hideItem: 'hide', approveItem: 'approve', softDeleteItem: 'soft', restoreItem: 'restore', banUser: 'ban', unbanUser: 'unban' };
+      var typeMap = { hideItem: 'items', approveItem: 'items', softDeleteItem: 'items', restoreItem: 'items', banUser: 'users', unbanUser: 'users' };
+      var method = action.includes('Delete') || action === 'softDeleteItem' ? 'DELETE' : 'PUT';
+      var suffix = methodMap[action];
+      var type = typeMap[action];
+      if (!confirm('确认执行 ' + action + '？')) return;
+      try {
+        await api('/admin/' + type + '/' + id + '/' + suffix, { method: method });
+        loadSection(currentSection);
+      } catch (e) { alert('操作失败: ' + e.message); }
+    }
+
+    API_BASE = getApiBase();
+    if (!API_BASE) API_BASE = 'https://campus-lost-found-3ywr.onrender.com/api/v1';
+    if (token) renderLayout(); else renderLogin();
+  </script>
+</body>
+</html>

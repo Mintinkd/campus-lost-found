@@ -48,7 +48,9 @@ const User = sequelize.define('User', {
   phoneEncrypted: { type: DataTypes.STRING(200) },
   email: { type: DataTypes.STRING(200) },
   password: { type: DataTypes.STRING(200) },
-  campus: { type: DataTypes.STRING(100) }
+  campus: { type: DataTypes.STRING(100) },
+  roleId: { type: DataTypes.STRING(36), defaultValue: null },
+  isBanned: { type: DataTypes.BOOLEAN, defaultValue: false }
 }, {
   tableName: 'users'
 });
@@ -66,8 +68,9 @@ const Item = sequelize.define('Item', {
     type: DataTypes.STRING(20),
     defaultValue: 'pending',
     allowNull: false,
-    validate: { isIn: [['pending', 'claiming', 'returned', 'expired']] }
-  }
+    validate: { isIn: [['pending', 'claiming', 'returned', 'expired', 'hidden']] }
+  },
+  deletedAt: { type: DataTypes.DATE, defaultValue: null }
 }, {
   tableName: 'items',
   indexes: [
@@ -130,8 +133,30 @@ const Notification = sequelize.define('Notification', {
   updatedAt: false,
   indexes: [
     { fields: ['user_id'] },
-    { fields: ['status'] }
-  ]
+    { fields: ['status'] }]
+});
+
+const Role = sequelize.define('Role', {
+  id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+  name: { type: DataTypes.STRING(50), unique: true, allowNull: false },
+  permissions: { type: types.JSON_T, allowNull: false, defaultValue: [] }
+}, {
+  tableName: 'roles'
+});
+
+const AdminLog = sequelize.define('AdminLog', {
+  id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+  adminId: { type: DataTypes.STRING(36), allowNull: false },
+  action: { type: DataTypes.STRING(100), allowNull: false },
+  targetType: { type: DataTypes.STRING(50), allowNull: false },
+  targetId: { type: DataTypes.STRING(36), allowNull: false },
+  detail: { type: DataTypes.TEXT }
+}, {
+  tableName: 'admin_logs',
+  updatedAt: false,
+  indexes: [
+    { fields: ['admin_id'] },
+    { fields: ['target_type', 'target_id'] }]
 });
 
 User.hasMany(Item, { foreignKey: 'finderId', as: 'items' });
@@ -143,4 +168,9 @@ Claim.belongsTo(User, { foreignKey: 'claimerId', as: 'claimer' });
 User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-module.exports = { sequelize, User, Item, SearchRecord, Claim, Notification };
+User.belongsTo(Role, { foreignKey: 'roleId', as: 'role', constraints: false });
+Role.hasMany(User, { foreignKey: 'roleId', as: 'users', constraints: false });
+User.hasMany(AdminLog, { foreignKey: 'adminId', as: 'adminLogs', constraints: false });
+AdminLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin', constraints: false });
+
+module.exports = { sequelize, User, Item, SearchRecord, Claim, Notification, Role, AdminLog };

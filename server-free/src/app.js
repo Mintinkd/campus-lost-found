@@ -14,6 +14,7 @@ const itemRoutes = require('./routes/items');
 const searchRoutes = require('./routes/search');
 const claimRoutes = require('./routes/claims');
 const notifRoutes = require('./routes/notifications');
+const adminRoutes = require('./routes/admin');
 const configRouter = require('./routes/config');
 
 const itemService = require('./services/item');
@@ -50,6 +51,7 @@ app.use('/api/v1/items', itemRoutes);
 app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/claims', claimRoutes);
 app.use('/api/v1/notifications', notifRoutes);
+app.use('/api/v1/admin', adminRoutes);
 app.use(configRouter());
 
 app.get('/api/v1/health', (req, res) => {
@@ -128,6 +130,36 @@ async function startServer() {
 
     await sequelize.sync({ alter: true });
     console.log('数据库同步完成');
+
+    const { Role, User } = require('./models');
+    const bcrypt = require('bcryptjs');
+    const [superAdminRole, created] = await Role.findOrCreate({
+      where: { name: 'super_admin' },
+      defaults: { name: 'super_admin', permissions: Object.values(require('./middleware/adminAuth').PERMISSIONS) }
+    });
+    if (created) console.log('[Init] 创建 super_admin 角色');
+    await Role.findOrCreate({
+      where: { name: 'admin' },
+      defaults: { name: 'admin', permissions: ['content:view', 'content:hide', 'content:delete', 'user:view', 'admin:log'] }
+    });
+    await Role.findOrCreate({
+      where: { name: 'moderator' },
+      defaults: { name: 'moderator', permissions: ['content:view', 'content:hide', 'user:view'] }
+    });
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@campus.edu';
+    const adminPass = process.env.ADMIN_PASSWORD || 'admin123456';
+    const existingAdmin = await User.findOne({ where: { email: adminEmail } });
+    if (!existingAdmin) {
+      const hashed = await bcrypt.hash(adminPass, 10);
+      await User.create({
+        openid: 'admin_' + Date.now(),
+        nickname: '系统管理员',
+        email: adminEmail,
+        password: hashed,
+        roleId: superAdminRole.id
+      });
+      console.log(`[Init] 创建管理员账号: ${adminEmail}`);
+    }
 
     uploadService.initCloudinary();
 
