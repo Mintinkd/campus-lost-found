@@ -14,7 +14,13 @@ const sequelizeOptions = {
 if (config.db.dialect === 'sqlite') {
   sequelizeOptions.dialect = 'sqlite';
   sequelizeOptions.storage = config.db.storage;
-
+} else if (config.db.dialect === 'postgres') {
+  sequelizeOptions.dialect = 'postgres';
+  sequelizeOptions.host = config.db.host;
+  sequelizeOptions.port = config.db.port;
+  sequelizeOptions.dialectOptions = {
+    ssl: config.db.ssl ? { rejectUnauthorized: false } : undefined
+  };
 } else {
   sequelizeOptions.dialect = config.db.dialect;
   sequelizeOptions.host = config.db.host;
@@ -27,6 +33,12 @@ const sequelize = new Sequelize(
   config.db.dialect === 'sqlite' ? '' : config.db.pass,
   sequelizeOptions
 );
+
+const DYNAMIC_TYPES = {
+  sqlite: { JSON_T: DataTypes.JSON, STRING_MAX: DataTypes.STRING(500) },
+  postgres: { JSON_T: DataTypes.JSONB, STRING_MAX: DataTypes.STRING(500) }
+};
+const types = DYNAMIC_TYPES[config.db.dialect] || DYNAMIC_TYPES.sqlite;
 
 const User = sequelize.define('User', {
   id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
@@ -51,7 +63,7 @@ const Item = sequelize.define('Item', {
   description: { type: DataTypes.TEXT },
   location: { type: DataTypes.STRING(100), allowNull: false },
   foundTime: { type: DataTypes.DATE, allowNull: false, field: 'found_time' },
-  photos: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
+  photos: { type: types.JSON_T, allowNull: false, defaultValue: [] },
   status: {
     type: DataTypes.STRING(20),
     defaultValue: 'pending',
@@ -74,7 +86,7 @@ const SearchRecord = sequelize.define('SearchRecord', {
   id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
   ownerId: { type: DataTypes.STRING(36), allowNull: false, field: 'owner_id' },
   searchText: { type: DataTypes.TEXT, allowNull: false, field: 'search_text' },
-  parsedDimensions: { type: DataTypes.JSON, field: 'parsed_dimensions' }
+  parsedDimensions: { type: types.JSON_T, field: 'parsed_dimensions' }
 }, {
   tableName: 'search_records',
   createdAt: 'created_at',
@@ -111,7 +123,7 @@ const Notification = sequelize.define('Notification', {
   userId: { type: DataTypes.STRING(36), allowNull: false, field: 'user_id' },
   type: { type: DataTypes.STRING(50), allowNull: false },
   title: { type: DataTypes.STRING(200), allowNull: false },
-  content: { type: DataTypes.JSON, allowNull: false },
+  content: { type: types.JSON_T, allowNull: false },
   isRead: { type: DataTypes.BOOLEAN, defaultValue: false, field: 'is_read' },
   retryCount: { type: DataTypes.INTEGER, defaultValue: 0, field: 'retry_count' },
   status: {

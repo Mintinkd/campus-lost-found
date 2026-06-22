@@ -11,10 +11,11 @@ module.exports = {
     dialect: process.env.DB_DIALECT || 'sqlite',
     storage: process.env.DB_STORAGE || './data/campus_lost_found.db',
     host: process.env.DB_HOST || '',
-    port: process.env.DB_PORT || 3306,
+    port: parseInt(process.env.DB_PORT) || 5432,
     name: process.env.DB_NAME || 'campus_lost_found',
     user: process.env.DB_USER || '',
     pass: process.env.DB_PASS || '',
+    ssl: process.env.DB_SSL === 'true' || process.env.DB_SSL === '1',
     pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
   },
   recognition: {

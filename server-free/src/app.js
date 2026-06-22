@@ -89,8 +89,13 @@ async function startServer() {
     await sequelize.authenticate();
     console.log(`数据库连接成功 (${config.db.dialect})`);
 
-    await sequelize.sync({ alter: config.nodeEnv === 'development' });
-    console.log('数据库同步完成');
+    if (config.nodeEnv === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('数据库同步完成(开发模式: alter=true)');
+    } else {
+      await sequelize.sync();
+      console.log('数据库同步完成(生产模式)');
+    }
 
     const schedule = require('node-schedule');
     schedule.scheduleJob('0 2 * * *', async () => {

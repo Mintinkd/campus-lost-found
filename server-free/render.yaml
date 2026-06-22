@@ -1,43 +1,60 @@
-build:
-  command: npm run build
-  publish: src/app.js
+services:
+  - type: web
+    name: campus-lost-found
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: node src/app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_DIALECT
+        value: postgres
+      - key: DB_HOST
+        fromDatabase:
+          name: campus-lost-found-db
+          property: host
+      - key: DB_PORT
+        value: 5432
+      - key: DB_NAME
+        fromDatabase:
+          name: campus-lost-found-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: campus-lost-found-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: campus-lost-found-db
+          property: password
+      - key: DB_SSL
+        value: "true"
+      - key: RECOGNITION_PROVIDER
+        value: tensorflow
+      - key: NOTIFICATION_PROVIDER
+        value: email
+      - key: AUTH_PROVIDER
+        value: local
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ENCRYPTION_IV
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
 
-run:
-  command: node src/app.js
-  envVars:
-    - key: NODE_ENV
-      value: production
-    - key: DB_DIALECT
-      value: sqlite
-    - key: DB_STORAGE
-      value: /opt/render/project/src/data/campus_lost_found.db
-    - key: RECOGNITION_PROVIDER
-      value: tensorflow
-    - key: NOTIFICATION_PROVIDER
-      value: email
-    - key: AUTH_PROVIDER
-      value: local
-    - key: JWT_SECRET
-      generateValue: true
-    - key: ENCRYPTION_KEY
-      generateValue: true
-    - key: ENCRYPTION_IV
-      generateValue: true
-    - key: SMTP_HOST
-      sync: false
-    - key: SMTP_PORT
-      sync: false
-    - key: SMTP_USER
-      sync: false
-    - key: SMTP_PASS
-      sync: false
-    - key: SMTP_FROM
-      sync: false
-    - key: CORS_ORIGIN
-      sync: false
-    - key: SITE_URL
-      sync: false
-
-disk:
-  name: campus-lost-found-data
-  mountPath: /opt/render/project/src/data
+databases:
+  - name: campus-lost-found-db
+    databaseName: campus_lost_found
+    plan: starter
