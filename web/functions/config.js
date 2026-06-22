@@ -9,7 +9,7 @@ export async function onRequestGet(context) {
     MAX_UPLOAD_SIZE: env.MAX_UPLOAD_SIZE || '10485760'
   };
 
-  const js = `window.__APP_CONFIG__ = ${JSON.stringify(config)};`;
+  const js = `window.__APP_CONFIG__ = Object.assign(window.__APP_CONFIG__ || {}, ${JSON.stringify(config)});`;
 
   return new Response(js, {
     status: 200,
