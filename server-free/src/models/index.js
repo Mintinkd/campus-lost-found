@@ -14,7 +14,7 @@ const sequelizeOptions = {
 if (config.db.dialect === 'sqlite') {
   sequelizeOptions.dialect = 'sqlite';
   sequelizeOptions.storage = config.db.storage;
-  sequelizeOptions.dialectOptions = { mode: require('sqlite3').OPEN_READWRITE | require('sqlite3').OPEN_CREATE };
+
 } else {
   sequelizeOptions.dialect = config.db.dialect;
   sequelizeOptions.host = config.db.host;

@@ -1,41 +1,43 @@
-function resolveApiBase() {
+function getApiBase() {
   if (window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE) {
     return window.__APP_CONFIG__.API_BASE;
   }
   if (window.API_BASE) {
     return window.API_BASE;
   }
-  var scripts = document.querySelectorAll('script[data-api-base]');
-  if (scripts.length > 0 && scripts[0].dataset.apiBase) {
-    return scripts[0].dataset.apiBase;
-  }
   return '/api/v1';
 }
 
-var API_BASE = resolveApiBase();
+var API_BASE = getApiBase();
 
 let token = localStorage.getItem('token') || '';
 let currentUser = null;
 
 async function api(path, options = {}) {
+  API_BASE = getApiBase();
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
+  if (res.status === 502) {
+    throw new Error('服务暂时不可用(502)，请稍后重试');
+  }
+
   const data = await res.json();
 
   if (data.code === 0) return data.data;
-  if (data.code >= 1000 && data.code < 2000) {
+  if (data.code === 1001 || data.code === 1002) {
     token = '';
     localStorage.removeItem('token');
     currentUser = null;
-    showLogin();
     throw new Error(data.message);
   }
   throw new Error(data.message);
 }
 
 async function apiUpload(path, formData) {
+  API_BASE = getApiBase();
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -44,6 +46,11 @@ async function apiUpload(path, formData) {
     headers,
     body: formData
   });
+
+  if (res.status === 502) {
+    throw new Error('服务暂时不可用(502)，请稍后重试');
+  }
+
   const data = await res.json();
   if (data.code === 0) return data.data;
   throw new Error(data.message);

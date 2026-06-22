@@ -90,14 +90,14 @@ async function startServer() {
     await sequelize.sync({ alter: config.nodeEnv === 'development' });
     console.log('数据库同步完成');
 
-    const { scheduleJob } = require('node-schedule');
-    scheduleJob('0 2 * * *', async () => {
+    const schedule = require('node-schedule');
+    schedule.scheduleJob('0 2 * * *', async () => {
       console.log('执行定时任务: 过期物品标记');
       const expired = await itemService.expireOldItems();
       console.log(`已标记 ${expired} 个物品为过期`);
     });
 
-    scheduleJob('0 */1 * * *', async () => {
+    schedule.scheduleJob('0 */1 * * *', async () => {
       console.log('执行定时任务: 过期认领清理');
       const expired = await claimService.expireOldClaims();
       if (expired > 0) console.log(`已清理 ${expired} 个过期认领`);

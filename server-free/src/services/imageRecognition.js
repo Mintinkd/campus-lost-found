@@ -9,11 +9,40 @@ const CATEGORIES = [
 
 const FORBIDDEN_ITEMS = ['刀具', '枪支', '爆炸物', '毒品'];
 
-async function recognizeImage(imageBase64) {
-  const provider = config.recognition.provider;
+let tfModel = null;
+let tfLoadAttempted = false;
+let tfAvailable = false;
 
-  if (provider === 'huawei' && config.recognition.hwCloud.ak) {
+async function ensureTfModel() {
+  if (tfModel) return true;
+  if (tfLoadAttempted && !tfAvailable) return false;
+  if (config.recognition.provider !== 'tensorflow') return false;
+
+  tfLoadAttempted = true;
+  try {
+    const tf = require('@tensorflow/tfjs-node');
+    const mobilenet = require('@tensorflow-models/mobilenet');
+
+    console.log('[AI] 正在加载 MobileNet 模型...');
+    tfModel = await mobilenet.load({ version: 2, alpha: 1.0 });
+    tfAvailable = true;
+    console.log('[AI] MobileNet 模型加载成功');
+    return true;
+  } catch (error) {
+    console.warn('[AI] TensorFlow.js 不可用，降级为手动选择:', error.message);
+    tfAvailable = false;
+    return false;
+  }
+}
+
+async function recognizeImage(imageBase64) {
+  if (config.recognition.provider === 'huawei' && config.recognition.hwCloud.ak) {
     return recognizeWithHuawei(imageBase64);
+  }
+
+  const loaded = await ensureTfModel();
+  if (!loaded) {
+    return { success: false, error: 'AI识别不可用，请手动选择类别', fallback: true };
   }
 
   return recognizeWithTensorFlow(imageBase64);
@@ -22,12 +51,9 @@ async function recognizeImage(imageBase64) {
 async function recognizeWithTensorFlow(imageBase64) {
   try {
     const tf = require('@tensorflow/tfjs-node');
-    const mobilenet = require('@tensorflow-models/mobilenet');
-
     const buffer = Buffer.from(imageBase64, 'base64');
     const tfimage = tf.node.decodeImage(buffer, 3);
-    const model = await mobilenet.load({ version: 2, alpha: 1.0 });
-    const predictions = await model.classify(tfimage);
+    const predictions = await tfModel.classify(tfimage);
     tfimage.dispose();
 
     if (!predictions || predictions.length === 0) {
@@ -58,7 +84,7 @@ async function recognizeWithTensorFlow(imageBase64) {
       }))
     };
   } catch (error) {
-    console.error('TensorFlow.js识别异常:', error.message);
+    console.error('[AI] TensorFlow.js 识别异常:', error.message);
     return { success: false, error: error.message, fallback: true };
   }
 }
@@ -99,7 +125,7 @@ async function recognizeWithHuawei(imageBase64) {
       }))
     };
   } catch (error) {
-    console.error('华为云识别异常:', error.message);
+    console.error('[AI] 华为云识别异常:', error.message);
     return { success: false, error: error.message, fallback: true };
   }
 }
