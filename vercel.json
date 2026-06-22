@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "name": "campus-lost-found",
+  "builds": [
+    {
+      "src": "server-free/src/app.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server-free/src/app.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "web/$1"
+    }
+  ]
+}

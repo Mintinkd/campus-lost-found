@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-lost-found-backend
+  labels:
+    app: campus-lost-found
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: campus-lost-found
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: campus-lost-found
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: swr.cn-north-4.myhuaweicloud.com/campus-lost-found/backend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: host
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: campus_lost_found
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: jwt-secret
+            - name: HW_CLOUD_AK
+              valueFrom:
+                secretKeyRef:
+                  name: hw-cloud-credentials
+                  key: ak
+            - name: HW_CLOUD_SK
+              valueFrom:
+                secretKeyRef:
+                  name: hw-cloud-credentials
+                  key: sk
+            - name: HW_CLOUD_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: hw-cloud-credentials
+                  key: project-id
+            - name: HW_CLOUD_REGION
+              value: cn-north-4
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: campus-lost-found-backend
+  labels:
+    app: campus-lost-found
+    component: backend
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app: campus-lost-found
+    component: backend
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: campus-lost-found-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: campus-lost-found-backend
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

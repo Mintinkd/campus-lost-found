@@ -1,0 +1,88 @@
+<view class="page container">
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <block wx:elif="{{item}}">
+    <view class="card">
+      <view class="photo-swiper">
+        <swiper indicator-dots autoplay circular>
+          <swiper-item wx:for="{{item.photos}}" wx:key="*this">
+            <image src="{{item}}" mode="aspectFill" data-src="{{item}}" bindtap="previewPhoto" />
+          </swiper-item>
+        </swiper>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="detail-header">
+        <text class="tag">{{item.category}}</text>
+        <text class="status-badge status-{{item.status}}">
+          {{item.status === 'pending' ? '待认领' : item.status === 'claiming' ? '认领中' : item.status === 'returned' ? '已归还' : '已过期'}}
+        </text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">📍 拾到地点</text>
+        <text class="detail-value">{{item.location}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">🕐 拾到时间</text>
+        <text class="detail-value">{{item.foundTime}}</text>
+      </view>
+      <view class="detail-row" wx:if="{{item.description}}">
+        <text class="detail-label">📝 描述</text>
+        <text class="detail-value">{{item.description}}</text>
+      </view>
+      <view class="detail-row" wx:if="{{item.confidence}}">
+        <text class="detail-label">🤖 AI置信度</text>
+        <text class="detail-value">{{item.confidence}}%</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">👤 拾物者</text>
+        <text class="detail-value">{{item.finder.nickname}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{!isOwner && item.status === 'pending' || item.status === 'claiming'}}" class="action-area">
+      <button class="btn-primary" bindtap="showClaim">我要认领</button>
+    </view>
+
+    <view wx:if="{{isOwner && claims.length > 0}}" class="card">
+      <view class="section-title">认领申请</view>
+      <view class="claim-item" wx:for="{{claims}}" wx:key="id">
+        <view class="claim-header">
+          <text class="claim-user">{{item.claimer.nickname}}</text>
+          <text class="status-badge status-{{item.status}}">
+            {{item.status === 'pending' ? '待确认' : item.status === 'confirmed' ? '已确认' : item.status === 'completed' ? '已完成' : item.status === 'rejected' ? '已拒绝' : '已超时'}}
+          </text>
+        </view>
+        <view class="claim-reason">{{item.claimReason}}</view>
+        <view class="claim-actions" wx:if="{{item.status === 'pending'}}">
+          <view class="btn-secondary claim-btn" data-id="{{item.id}}" bindtap="confirmClaim">确认</view>
+          <view class="btn-danger claim-btn" data-id="{{item.id}}" bindtap="rejectClaim">拒绝</view>
+        </view>
+        <view class="claim-actions" wx:if="{{item.status === 'confirmed'}}">
+          <view class="btn-primary claim-btn" data-id="{{item.id}}" bindtap="confirmReturn">确认归还</view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="modal-mask" wx:if="{{showClaimModal}}" bindtap="hideClaim"></view>
+  <view class="modal" wx:if="{{showClaimModal}}">
+    <view class="modal-title">认领申请</view>
+    <view class="modal-content">
+      <textarea
+        class="claim-textarea"
+        placeholder="请描述物品特征以验证身份，如：蓝色折叠伞，把手处有划痕"
+        value="{{claimReason}}"
+        bindinput="onClaimReasonInput"
+        maxlength="500"
+      />
+    </view>
+    <view class="modal-actions">
+      <view class="btn-secondary modal-btn" bindtap="hideClaim">取消</view>
+      <view class="btn-primary modal-btn" bindtap="submitClaim">提交</view>
+    </view>
+  </view>
+</view>

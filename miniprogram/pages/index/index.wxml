@@ -1,0 +1,57 @@
+<view class="page">
+  <view class="header">
+    <view class="header-card">
+      <view class="header-title">校园失物招领</view>
+      <view class="header-desc">AI智能识别 · 语义搜索 · 快速匹配</view>
+      <view class="header-actions">
+        <view class="action-btn" bindtap="onTapUpload">
+          <text class="action-icon">📷</text>
+          <text class="action-text">我捡到了</text>
+        </view>
+        <view class="action-btn" bindtap="onTapSearch">
+          <text class="action-icon">🔍</text>
+          <text class="action-text">我丢了东西</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">最近拾物</text>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading">
+      <text>加载中...</text>
+    </view>
+
+    <view wx:elif="{{recentItems.length === 0}}" class="empty-state">
+      <text class="icon">📭</text>
+      <text class="text">暂无拾物信息</text>
+    </view>
+
+    <view wx:else class="item-list">
+      <view
+        class="item-card"
+        wx:for="{{recentItems}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onTapItem"
+      >
+        <view class="item-photo">
+          <image src="{{item.photos[0]}}" mode="aspectFill" />
+        </view>
+        <view class="item-info">
+          <view class="item-category">
+            <text class="tag">{{item.category}}</text>
+            <text class="status-badge status-{{item.status}}">
+              {{item.status === 'pending' ? '待认领' : item.status === 'claiming' ? '认领中' : item.status === 'returned' ? '已归还' : '已过期'}}
+            </text>
+          </view>
+          <view class="item-location">📍 {{item.location}}</view>
+          <view class="item-time text-secondary">{{item.foundTime}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

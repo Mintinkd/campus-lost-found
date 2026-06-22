@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "huawei-image-recognition": {
+      "command": "node",
+      "args": ["server/src/mcp/image-recognition-server.js"],
+      "env": {
+        "HW_CLOUD_AK": "${HW_CLOUD_AK}",
+        "HW_CLOUD_SK": "${HW_CLOUD_SK}",
+        "HW_CLOUD_REGION": "cn-north-4",
+        "HW_CLOUD_PROJECT_ID": "${HW_CLOUD_PROJECT_ID}"
+      }
+    }
+  }
+}

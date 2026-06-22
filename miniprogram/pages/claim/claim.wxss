@@ -1,0 +1,44 @@
+.claim-status {
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+.detail-row {
+  display: flex;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.detail-label {
+  width: 160rpx;
+  font-size: 28rpx;
+  color: #666;
+}
+
+.detail-value {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.phone {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #07C160;
+}
+
+.actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.actions button {
+  flex: 1;
+}

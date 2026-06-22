@@ -1,0 +1,61 @@
+<view class="page container">
+  <view class="card">
+    <view class="section-title">📸 上传照片</view>
+    <view class="photo-grid">
+      <view class="photo-item" wx:for="{{photos}}" wx:key="*this">
+        <image src="{{item}}" mode="aspectFill" />
+        <view class="photo-delete" data-index="{{index}}" bindtap="removePhoto">✕</view>
+      </view>
+      <view class="photo-add" bindtap="choosePhoto" wx:if="{{photos.length < 5}}">
+        <text class="add-icon">+</text>
+        <text class="add-text">添加照片</text>
+      </view>
+    </view>
+    <view wx:if="{{recognizing}}" class="recognizing">
+      <text class="recognizing-text">🤖 AI正在识别中...</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{category || needsConfirm}}">
+    <view class="section-title">🏷️ AI识别结果</view>
+    <view class="result-row">
+      <text class="tag">{{category}}</text>
+      <text class="confidence" wx:if="{{confidence}}">置信度: {{confidence}}%</text>
+    </view>
+    <view wx:if="{{needsConfirm}}" class="confirm-hint">
+      <text class="text-secondary">AI识别不确定，请手动选择分类</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">📝 物品信息</view>
+
+    <view class="form-item">
+      <text class="form-label">物品类别</text>
+      <picker range="{{categories}}" bindchange="onCategoryChange">
+        <view class="form-picker">{{category || '请选择类别'}}</view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">拾到地点 *</text>
+      <input class="form-input" placeholder="如：图书馆二楼" value="{{location}}" bindinput="onLocationInput" />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">拾到时间 *</text>
+      <picker mode="date" value="{{foundTime}}" bindchange="onTimeChange">
+        <view class="form-picker">{{foundTime || '请选择时间'}}</view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">补充描述</text>
+      <textarea class="form-textarea" placeholder="如：蓝色折叠伞，把手处有划痕" value="{{description}}" bindinput="onDescriptionInput" maxlength="500" />
+    </view>
+  </view>
+
+  <button class="btn-primary submit-btn" bindtap="submitItem" disabled="{{uploading}}" loading="{{uploading}}">
+    {{uploading ? '提交中...' : '提交上报'}}
+  </button>
+</view>

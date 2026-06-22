@@ -1,0 +1,80 @@
+<view class="page container">
+  <view class="profile-card card" wx:if="{{userInfo}}">
+    <image class="avatar" src="{{userInfo.avatarUrl}}" />
+    <view class="profile-info">
+      <text class="nickname">{{userInfo.nickname}}</text>
+      <text class="campus text-secondary" wx:if="{{userInfo.campus}}">{{userInfo.campus}}</text>
+    </view>
+    <button open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber" class="phone-btn">
+      {{userInfo.phoneMasked ? '已绑定' : '绑定手机号'}}
+    </button>
+  </view>
+
+  <view class="tabs">
+    <view class="tab {{activeTab === 'items' ? 'tab-active' : ''}}" data-tab="items" bindtap="switchTab">我的上报</view>
+    <view class="tab {{activeTab === 'myClaims' ? 'tab-active' : ''}}" data-tab="myClaims" bindtap="switchTab">我的认领</view>
+    <view class="tab {{activeTab === 'receivedClaims' ? 'tab-active' : ''}}" data-tab="receivedClaims" bindtap="switchTab">收到的认领</view>
+    <view class="tab {{activeTab === 'notifications' ? 'tab-active' : ''}}" data-tab="notifications" bindtap="switchTab">通知</view>
+  </view>
+
+  <view wx:if="{{activeTab === 'items'}}" class="list">
+    <view class="empty-state" wx:if="{{myItems.length === 0}}">
+      <text class="icon">📭</text>
+      <text class="text">暂无上报记录</text>
+    </view>
+    <view class="list-item card" wx:for="{{myItems}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapItem">
+      <view class="list-item-left">
+        <text class="tag">{{item.category}}</text>
+        <text class="status-badge status-{{item.status}}">
+          {{item.status === 'pending' ? '待认领' : item.status === 'claiming' ? '认领中' : item.status === 'returned' ? '已归还' : '已过期'}}
+        </text>
+      </view>
+      <text class="list-item-location">📍 {{item.location}}</text>
+      <text class="text-secondary">{{item.foundTime}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{activeTab === 'myClaims'}}" class="list">
+    <view class="empty-state" wx:if="{{myClaims.length === 0}}">
+      <text class="icon">📋</text>
+      <text class="text">暂无认领记录</text>
+    </view>
+    <view class="list-item card" wx:for="{{myClaims}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapClaim">
+      <view class="list-item-left">
+        <text class="tag">{{item.item.category}}</text>
+        <text class="status-badge status-{{item.status}}">
+          {{item.status === 'pending' ? '待确认' : item.status === 'confirmed' ? '已确认' : item.status === 'completed' ? '已完成' : item.status === 'rejected' ? '已拒绝' : '已超时'}}
+        </text>
+      </view>
+      <text class="text-secondary">{{item.claimReason}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{activeTab === 'receivedClaims'}}" class="list">
+    <view class="empty-state" wx:if="{{receivedClaims.length === 0}}">
+      <text class="icon">📨</text>
+      <text class="text">暂无认领申请</text>
+    </view>
+    <view class="list-item card" wx:for="{{receivedClaims}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapClaim">
+      <view class="list-item-left">
+        <text>{{item.claimer.nickname}}</text>
+        <text class="status-badge status-{{item.status}}">
+          {{item.status === 'pending' ? '待确认' : item.status === 'confirmed' ? '已确认' : item.status === 'completed' ? '已完成' : item.status === 'rejected' ? '已拒绝' : '已超时'}}
+        </text>
+      </view>
+      <text class="text-secondary">{{item.claimReason}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{activeTab === 'notifications'}}" class="list">
+    <view class="empty-state" wx:if="{{notifications.length === 0}}">
+      <text class="icon">🔔</text>
+      <text class="text">暂无通知</text>
+    </view>
+    <view class="list-item card" wx:for="{{notifications}}" wx:key="id">
+      <text class="notif-title">{{item.title}}</text>
+      <text class="text-secondary">{{item.type === 'match_found' ? '发现匹配物品' : item.type === 'claim_request' ? '收到认领申请' : item.type === 'claim_confirmed' ? '认领已确认' : '物品已归还'}}</text>
+      <text class="text-secondary">{{item.createdAt}}</text>
+    </view>
+  </view>
+</view>

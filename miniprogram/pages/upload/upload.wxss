@@ -1,0 +1,124 @@
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.photo-item {
+  position: relative;
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.photo-item image {
+  width: 100%;
+  height: 100%;
+}
+
+.photo-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40rpx;
+  height: 40rpx;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  border-radius: 0 0 0 12rpx;
+}
+
+.photo-add {
+  width: 180rpx;
+  height: 180rpx;
+  border: 2rpx dashed #ccc;
+  border-radius: 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+}
+
+.add-icon {
+  font-size: 56rpx;
+  color: #ccc;
+}
+
+.add-text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.recognizing {
+  margin-top: 16rpx;
+  padding: 16rpx;
+  background: #E3F2FD;
+  border-radius: 8rpx;
+  text-align: center;
+}
+
+.recognizing-text {
+  color: #1976D2;
+  font-size: 28rpx;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.confidence {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.confirm-hint {
+  margin-top: 12rpx;
+}
+
+.form-item {
+  margin-bottom: 24rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+  font-weight: 500;
+}
+
+.form-input {
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  font-size: 28rpx;
+}
+
+.form-picker {
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.form-textarea {
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  font-size: 28rpx;
+  width: 100%;
+  min-height: 120rpx;
+}
+
+.submit-btn {
+  margin-top: 32rpx;
+  width: 100%;
+}

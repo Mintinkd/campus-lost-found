@@ -1,0 +1,58 @@
+<view class="page container">
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <block wx:elif="{{claim}}">
+    <view class="card">
+      <view class="claim-status">
+        <text class="status-badge status-{{claim.status}}">
+          {{claim.status === 'pending' ? '待确认' : claim.status === 'confirmed' ? '已确认' : claim.status === 'returning' ? '归还中' : claim.status === 'completed' ? '已完成' : claim.status === 'rejected' ? '已拒绝' : '已超时'}}
+        </text>
+      </view>
+
+      <view class="detail-row">
+        <text class="detail-label">物品类别</text>
+        <text class="detail-value">{{claim.item.category}}</text>
+      </view>
+
+      <view class="detail-row">
+        <text class="detail-label">拾到地点</text>
+        <text class="detail-value">{{claim.item.location}}</text>
+      </view>
+
+      <view class="detail-row">
+        <text class="detail-label">认领说明</text>
+        <text class="detail-value">{{claim.claimReason}}</text>
+      </view>
+
+      <view class="detail-row" wx:if="{{claim.confirmedAt}}">
+        <text class="detail-label">确认时间</text>
+        <text class="detail-value">{{claim.confirmedAt}}</text>
+      </view>
+
+      <view class="detail-row" wx:if="{{claim.returnedAt}}">
+        <text class="detail-label">归还时间</text>
+        <text class="detail-value">{{claim.returnedAt}}</text>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{contact}}">
+      <view class="section-title">📞 联系方式</view>
+      <view class="contact-info">
+        <text>{{contact.nickname}}</text>
+        <text wx:if="{{contact.phone}}" class="phone">{{contact.phone}}</text>
+      </view>
+    </view>
+
+    <view class="actions" wx:if="{{claim.status === 'confirmed'}}">
+      <button class="btn-primary" bindtap="loadContact">查看联系方式</button>
+      <button class="btn-primary" bindtap="confirmReturn">确认归还</button>
+    </view>
+
+    <view class="actions" wx:if="{{claim.status === 'pending'}}">
+      <button class="btn-secondary" bindtap="rejectClaim">拒绝认领</button>
+      <button class="btn-primary" bindtap="confirmClaim">确认认领</button>
+    </view>
+  </block>
+</view>

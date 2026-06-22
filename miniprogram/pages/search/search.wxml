@@ -1,0 +1,77 @@
+<view class="page container">
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="描述你丢失的物品，如：上周在图书馆丢了一把蓝色雨伞"
+        value="{{searchText}}"
+        bindinput="onSearchInput"
+        bindconfirm="doSearch"
+        confirm-type="search"
+      />
+      <text wx:if="{{searchText}}" class="search-clear" bindtap="clearSearch">✕</text>
+    </view>
+    <view class="search-btn" bindtap="doSearch">搜索</view>
+  </view>
+
+  <view wx:if="{{dimensions && searched}}" class="parse-result card">
+    <text class="parse-label">AI解析结果：</text>
+    <text wx:if="{{dimensions.category}}" class="tag">{{dimensions.category}}</text>
+    <text wx:if="{{dimensions.location}}" class="tag tag-warning">{{dimensions.location}}</text>
+    <text wx:if="{{dimensions.time}}" class="tag">{{dimensions.time.raw}}</text>
+    <text wx:if="{{dimensions.color}}" class="tag">{{dimensions.color}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>智能匹配中...</text>
+  </view>
+
+  <view wx:elif="{{searched && results.length === 0}}" class="empty-state">
+    <text class="icon">🔍</text>
+    <text class="text">未找到匹配物品</text>
+    <text class="text">试试调整搜索描述</text>
+  </view>
+
+  <view wx:elif="{{searched}}" class="result-list">
+    <view class="result-count">找到 {{results.length}} 个匹配</view>
+    <view
+      class="result-card card"
+      wx:for="{{results}}"
+      wx:key="item.id"
+      data-id="{{item.id}}"
+      bindtap="onTapResult"
+    >
+      <view class="result-header">
+        <view class="result-photo">
+          <image src="{{item.photos[0]}}" mode="aspectFill" />
+        </view>
+        <view class="result-info">
+          <view class="result-category">
+            <text class="tag">{{item.category}}</text>
+            <text class="match-score">{{item.matchScore}}% 匹配</text>
+          </view>
+          <view class="result-location">📍 {{item.location}}</view>
+          <view class="result-time text-secondary">{{item.foundTime}}</view>
+        </view>
+      </view>
+      <view wx:if="{{item.description}}" class="result-desc text-secondary">{{item.description}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!searched && history.length > 0}}" class="history-section">
+    <view class="section-title">搜索历史</view>
+    <view class="history-list">
+      <view
+        class="history-item"
+        wx:for="{{history}}"
+        wx:key="id"
+        data-text="{{item.searchText}}"
+        bindtap="onTapHistory"
+      >
+        <text class="history-icon">🕐</text>
+        <text class="history-text">{{item.searchText}}</text>
+      </view>
+    </view>
+  </view>
+</view>

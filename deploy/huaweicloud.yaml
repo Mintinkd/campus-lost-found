@@ -1,0 +1,106 @@
+version: '1.0'
+name: campus-lost-found
+description: 校园失物招领智能平台 - 华为云一键部署配置
+
+services:
+  backend:
+    type: container
+    image: swr.cn-north-4.myhuaweicloud.com/campus-lost-found/backend:latest
+    spec: 1u2g
+    port: 3000
+    env:
+      - name: NODE_ENV
+        value: production
+      - name: PORT
+        value: "3000"
+      - name: DB_HOST
+        valueFrom:
+          secret: db-credentials
+          key: host
+      - name: DB_PORT
+        value: "3306"
+      - name: DB_NAME
+        value: campus_lost_found
+      - name: DB_USER
+        valueFrom:
+          secret: db-credentials
+          key: username
+      - name: DB_PASS
+        valueFrom:
+          secret: db-credentials
+          key: password
+      - name: JWT_SECRET
+        valueFrom:
+          secret: app-secrets
+          key: jwt-secret
+      - name: HW_CLOUD_AK
+        valueFrom:
+          secret: hw-cloud-credentials
+          key: ak
+      - name: HW_CLOUD_SK
+        valueFrom:
+          secret: hw-cloud-credentials
+          key: sk
+      - name: HW_CLOUD_PROJECT_ID
+        valueFrom:
+          secret: hw-cloud-credentials
+          key: project-id
+      - name: HW_CLOUD_REGION
+        value: cn-north-4
+      - name: SMN_TOPIC_URN
+        valueFrom:
+          secret: app-secrets
+          key: smn-topic-urn
+      - name: ENCRYPTION_KEY
+        valueFrom:
+          secret: app-secrets
+          key: encryption-key
+      - name: ENCRYPTION_IV
+        valueFrom:
+          secret: app-secrets
+          key: encryption-iv
+    healthCheck:
+      httpGet:
+        path: /api/v1/health
+        port: 3000
+      initialDelaySeconds: 10
+      periodSeconds: 30
+    autoscaling:
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilization: 70
+
+  database:
+    type: rds
+    engine: mysql
+    version: "8.0"
+    spec: 2u4g
+    storage: 40GB
+    backup:
+      retentionDays: 7
+      startTime: "03:00"
+
+  obs:
+    type: obs
+    bucket: campus-lost-found-photos
+    acl: private
+    lifecycle:
+      - prefix: uploads/
+        days: 90
+        action: delete
+
+  smn:
+    type: smn
+    topicName: campus-lost-found-notifications
+    protocol: wechat
+
+ingress:
+  host: lostfound.yourcampus.edu.cn
+  tls: true
+  paths:
+    - path: /api
+      service: backend
+      port: 3000
+    - path: /uploads
+      service: backend
+      port: 3000

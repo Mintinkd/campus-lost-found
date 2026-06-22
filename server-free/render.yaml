@@ -1,0 +1,43 @@
+build:
+  command: npm run build
+  publish: src/app.js
+
+run:
+  command: node src/app.js
+  envVars:
+    - key: NODE_ENV
+      value: production
+    - key: DB_DIALECT
+      value: sqlite
+    - key: DB_STORAGE
+      value: /opt/render/project/src/data/campus_lost_found.db
+    - key: RECOGNITION_PROVIDER
+      value: tensorflow
+    - key: NOTIFICATION_PROVIDER
+      value: email
+    - key: AUTH_PROVIDER
+      value: local
+    - key: JWT_SECRET
+      generateValue: true
+    - key: ENCRYPTION_KEY
+      generateValue: true
+    - key: ENCRYPTION_IV
+      generateValue: true
+    - key: SMTP_HOST
+      sync: false
+    - key: SMTP_PORT
+      sync: false
+    - key: SMTP_USER
+      sync: false
+    - key: SMTP_PASS
+      sync: false
+    - key: SMTP_FROM
+      sync: false
+    - key: CORS_ORIGIN
+      sync: false
+    - key: SITE_URL
+      sync: false
+
+disk:
+  name: campus-lost-found-data
+  mountPath: /opt/render/project/src/data
