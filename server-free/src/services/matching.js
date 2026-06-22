@@ -1,5 +1,6 @@
 const { Item, SearchRecord, User } = require('../models');
 const { Op } = require('sequelize');
+const config = require('../config');
 
 const CATEGORY_WEIGHT = 0.4;
 const LOCATION_WEIGHT = 0.3;
@@ -83,11 +84,14 @@ function calculateTimeMatch(searchTime, itemFoundTime) {
   const itemDate = new Date(itemFoundTime);
   const diffDays = Math.floor((now - itemDate) / (1000 * 60 * 60 * 24));
   switch (searchTime.type) {
-    case 'today': return diffDays === 0 ? 1.0 : 0.1;
-    case 'yesterday': return diffDays === 1 ? 1.0 : 0.1;
-    case 'day_before_yesterday': return diffDays === 2 ? 1.0 : 0.1;
-    case 'last_week': return diffDays >= 7 && diffDays <= 14 ? 1.0 : 0.2;
-    case 'this_week': return diffDays <= 7 ? 1.0 : 0.1;
+    case 'today': return diffDays === 0 ? 1.0 : 0.3;
+    case 'yesterday': return diffDays === 1 ? 1.0 : diffDays <= 2 ? 0.5 : 0.1;
+    case 'day_before_yesterday': return diffDays === 2 ? 1.0 : diffDays <= 3 ? 0.5 : 0.1;
+    case 'last_week': return diffDays >= 7 && diffDays <= 14 ? 1.0 : diffDays >= 5 && diffDays <= 16 ? 0.5 : 0.2;
+    case 'this_week': return diffDays <= 7 ? 1.0 : diffDays <= 10 ? 0.5 : 0.1;
+    case 'morning':
+    case 'afternoon':
+    case 'evening': return diffDays <= 1 ? 0.8 : 0.3;
     default: return 0.5;
   }
 }
@@ -130,13 +134,38 @@ async function semanticSearch(userId, searchText) {
   await SearchRecord.create({ ownerId: userId, searchText, parsedDimensions: dimensions });
 
   const whereClause = { status: { [Op.in]: ['pending', 'claiming'] } };
-  if (dimensions.category) {
+  const hasCategory = !!dimensions.category;
+  const hasLocation = !!dimensions.location;
+
+  if (hasCategory) {
     const categoryAliases = CATEGORY_ALIASES[dimensions.category] || [dimensions.category];
-    whereClause.category = { [Op.in]: categoryAliases };
+    if (config.db.dialect === 'postgres') {
+      whereClause[Op.or] = [
+        { category: { [Op.in]: categoryAliases } },
+        { description: { [Op.iLike]: '%' + dimensions.category + '%' } }
+      ];
+    } else {
+      whereClause.category = { [Op.in]: categoryAliases };
+    }
   }
-  if (dimensions.location) {
+  if (hasLocation && !whereClause[Op.or]) {
     const locationAliases = LOCATION_ALIASES[dimensions.location] || [dimensions.location];
     whereClause.location = { [Op.in]: locationAliases };
+  }
+
+  if (!hasCategory && !hasLocation && searchText.length >= 2) {
+    if (config.db.dialect === 'postgres') {
+      whereClause[Op.or] = [
+        { description: { [Op.iLike]: '%' + searchText + '%' } },
+        { location: { [Op.iLike]: '%' + searchText + '%' } },
+        { category: { [Op.iLike]: '%' + searchText + '%' } }
+      ];
+    } else {
+      whereClause[Op.or] = [
+        { description: { [Op.substring]: searchText } },
+        { location: { [Op.substring]: searchText } }
+      ];
+    }
   }
 
   const items = await Item.findAll({

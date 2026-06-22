@@ -192,7 +192,7 @@ async function doSearch() {
           '<div class="result-photo">' +
           (r.item.photos && r.item.photos.length > 0 ? '<img src="' + resolveUrl(r.item.photos[0]) + '">' : '<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:32px">📦</div>') +
           '</div><div class="result-info">' +
-          '<div class="result-meta"><span class="tag">' + r.item.category + '</span> <span class="match-score">' + r.matchScore + '% 匹配</span></div>' +
+          '<div class="result-meta"><span class="tag">' + r.item.category + '</span> <span class="match-score">' + Math.round(r.matchScore * 100) + '% 匹配</span></div>' +
           '<div class="result-location">📍 ' + r.item.location + '</div>' +
           '<div class="result-time">' + formatTime(r.item.foundTime) + '</div>' +
           (r.item.description ? '<div style="font-size:13px;color:#999;margin-top:4px">' + r.item.description + '</div>' : '') +
