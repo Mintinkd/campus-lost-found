@@ -1,19 +1,8 @@
-/**
- * 配置加载器 - 支持多种环境变量注入方案
- *
- * 方案A: Cloudflare Pages Functions 动态生成 /config.js
- * 方案B: 构建时 sed 替换占位符，生成静态 config.js
- * 方案C: 运行时从后端 /api/v1/config/client 获取
- * 方案D: Cloudflare Workers HTMLRewriter 注入 window.__APP_CONFIG__
- *
- * 优先级: __APP_CONFIG__ > config.js > 后端API > data-* 属性 > 默认值
- */
-
 (function () {
   'use strict';
 
   var DEFAULTS = {
-    API_BASE: '/api/v1',
+    API_BASE: '',
     APP_NAME: '校园失物招领',
     RECOGNITION_PROVIDER: 'tensorflow',
     NOTIFICATION_PROVIDER: 'email',
@@ -31,20 +20,16 @@
   function isSensitiveKey(key) {
     return SENSITIVE_PATTERNS.some(function (pattern) {
       return pattern.test(key);
-  });
+    });
   }
 
   function sanitizeConfig(raw) {
     if (!raw || typeof raw !== 'object') return {};
-
     var safe = {};
     for (var key in raw) {
       if (!raw.hasOwnProperty(key)) continue;
       if (ALLOWED_KEYS.indexOf(key) === -1) continue;
-      if (isSensitiveKey(key)) {
-        console.warn('[ConfigLoader] 拒绝注入敏感配置项: ' + key);
-        continue;
-      }
+      if (isSensitiveKey(key)) continue;
       if (typeof raw[key] === 'string') {
         safe[key] = raw[key].replace(/[<>"'&]/g, '');
       } else {
@@ -56,7 +41,6 @@
 
   function mergeConfig() {
     var config = {};
-
     for (var key in DEFAULTS) {
       if (!DEFAULTS.hasOwnProperty(key)) continue;
       config[key] = DEFAULTS[key];
@@ -69,61 +53,60 @@
       }
     }
 
-    var scriptEl = document.querySelector('script[data-api-base]');
-    if (scriptEl && scriptEl.dataset.apiBase) {
-      config.API_BASE = scriptEl.dataset.apiBase;
-    }
-
     window.__APP_CONFIG__ = Object.freeze(config);
     return config;
   }
 
-  function loadFromBackend() {
-    var apiBase = window.__APP_CONFIG__
-      ? window.__APP_CONFIG__.API_BASE
-      : DEFAULTS.API_BASE;
-
-    if (!apiBase || apiBase === '/api/v1') {
-      return Promise.resolve(window.__APP_CONFIG__);
+  function detectApiBase() {
+    if (window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE) {
+      return window.__APP_CONFIG__.API_BASE;
     }
+    var meta = document.querySelector('meta[name="api-base"]');
+    if (meta && meta.content) return meta.content;
+    var base = document.querySelector('base');
+    if (base && base.href) return new URL('/api/v1', base.href).href;
+    return '';
+  }
 
+  function probeBackend(apiBase) {
+    if (!apiBase) return Promise.resolve(null);
+    var url = apiBase.replace(/\/+$/, '') + '/health';
     var controller = new AbortController();
-    var timeout = setTimeout(function () { controller.abort(); }, 3000);
+    var timeout = setTimeout(function () { controller.abort(); }, 5000);
 
-    return fetch(apiBase + '/config/client', { signal: controller.signal })
+    return fetch(url, { signal: controller.signal, mode: 'cors' })
       .then(function (res) {
         clearTimeout(timeout);
-        if (!res.ok) {
-          console.warn('[ConfigLoader] 后端配置接口返回 ' + res.status);
-          return null;
-        }
-        return res.json();
+        if (res.ok) return res.json();
+        return null;
       })
       .then(function (data) {
-        if (data && data.code === 0 && data.data) {
-          var sanitized = sanitizeConfig(data.data);
-          for (var k in sanitized) {
-            if (sanitized.hasOwnProperty(k) && !window.__APP_CONFIG__[k]) {
-              var merged = Object.assign({}, window.__APP_CONFIG__, sanitized);
-              window.__APP_CONFIG__ = Object.freeze(merged);
-              break;
-            }
-          }
-        }
-        return window.__APP_CONFIG__;
+        if (data && data.code === 0) return apiBase;
+        return null;
       })
-      .catch(function (err) {
+      .catch(function () {
         clearTimeout(timeout);
-        console.warn('[ConfigLoader] 后端配置加载失败:', err.message);
-        return window.__APP_CONFIG__;
+        return null;
       });
   }
 
   function init() {
     var config = mergeConfig();
+    var apiBase = config.API_BASE || detectApiBase();
 
-    if (!config.API_BASE || config.API_BASE === DEFAULTS.API_BASE) {
-      return loadFromBackend();
+    if (apiBase) {
+      return probeBackend(apiBase).then(function (validBase) {
+        if (validBase) {
+          config.API_BASE = validBase;
+          window.__APP_CONFIG__ = Object.freeze(config);
+          return config;
+        }
+        console.warn('[Config] 后端不可达: ' + apiBase);
+        config.API_BASE = '';
+        config._backendUnreachable = true;
+        window.__APP_CONFIG__ = Object.freeze(config);
+        return config;
+      });
     }
 
     return Promise.resolve(config);

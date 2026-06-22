@@ -14,6 +14,7 @@ const itemRoutes = require('./routes/items');
 const searchRoutes = require('./routes/search');
 const claimRoutes = require('./routes/claims');
 const notifRoutes = require('./routes/notifications');
+const configRouter = require('./routes/config');
 
 const itemService = require('./services/item');
 const claimService = require('./services/claim');
@@ -48,6 +49,7 @@ app.use('/api/v1/items', itemRoutes);
 app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/claims', claimRoutes);
 app.use('/api/v1/notifications', notifRoutes);
+app.use(configRouter());
 
 app.get('/api/v1/health', (req, res) => {
   res.success({

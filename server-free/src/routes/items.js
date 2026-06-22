@@ -3,7 +3,7 @@ const router = express.Router();
 const itemCtrl = require('../controllers/itemController');
 const { auth, optional } = require('../middleware/auth');
 
-router.post('/', itemCtrl.uploadMiddleware, auth, itemCtrl.recognizeAndCreate);
+router.post('/', auth, itemCtrl.uploadMiddleware, itemCtrl.recognizeAndCreate);
 router.get('/', optional, itemCtrl.getItems);
 router.get('/mine', auth, itemCtrl.getMyItems);
 router.get('/categories', itemCtrl.getCategories);

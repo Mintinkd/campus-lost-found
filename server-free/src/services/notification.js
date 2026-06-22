@@ -74,7 +74,7 @@ async function dispatchNotification(userId, notification) {
     }
   } catch (error) {
     console.error('通知推送失败:', error.message);
-    const retryCount = notification.retryCount + 1;
+    const retryCount = (notification.retryCount || 0) + 1;
     if (retryCount <= 3) {
       await notification.update({ retryCount, status: 'pending' });
       setTimeout(() => retryPush(notification.id), 5000);
