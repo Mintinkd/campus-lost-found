@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>校园失物招领 - AI智能匹配平台</title>
   <link rel="stylesheet" href="style.css">
+
+  <!--
+    环境变量注入方案说明:
+    - 方案A: Pages Functions 动态生成 /config.js (推荐)
+    - 方案B: 构建命令 sed 替换占位符生成 config.js
+    - 方案C: 运行时从后端 API 获取 (config-loader.js 自动降级)
+    - 方案D: Workers HTMLRewriter 注入 window.__APP_CONFIG__
+
+    优先级: __APP_CONFIG__ > config.js > 后端API > data-* > 默认值
+  -->
+
+  <!-- 配置加载器 (必须在所有业务脚本之前) -->
+  <script src="config-loader.js"></script>
+
+  <!--
+    方案A/D: 运行时注入
+    /config.js 由 Pages Functions 动态生成，或由构建脚本静态生成
+    onerror 确保加载失败时不阻塞后续脚本
+  -->
+  <script src="/config.js" onerror="console.log('[Config] /config.js 不可用，使用其他方案')"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -27,12 +47,14 @@
   <div id="modal-overlay" class="modal-overlay" style="display:none"></div>
   <div id="modal" class="modal" style="display:none"></div>
 
-  <!-- 手动注入后端 API 地址 -->
-  <script>
-    window.API_BASE = 'https://campus-lost-found-3ywr.onrender.com/api/v1';
-  </script>
-
   <script src="api.js"></script>
   <script src="app.js"></script>
+
+  <script>
+    __ConfigLoader.init().then(function() {
+      API_BASE = __ConfigLoader.get('API_BASE');
+      console.log('[App] 配置加载完成, API_BASE=' + API_BASE);
+    });
+  </script>
 </body>
 </html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>__APP_NAME__ - AI智能匹配平台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">🔍 __APP_NAME__</div>
+    <div class="nav-links">
+      <a href="#" data-page="home" class="nav-link active">首页</a>
+      <a href="#" data-page="upload" class="nav-link">上报拾物</a>
+      <a href="#" data-page="search" class="nav-link">搜索失物</a>
+      <a href="#" data-page="mine" class="nav-link">我的</a>
+    </div>
+    <div class="nav-auth">
+      <span id="user-info" style="display:none"></span>
+      <button id="btn-login" class="btn btn-sm" onclick="showLogin()">登录</button>
+      <button id="btn-logout" class="btn btn-sm btn-outline" style="display:none" onclick="logout()">退出</button>
+    </div>
+  </nav>
+
+  <main id="app" class="container"></main>
+
+  <div id="modal-overlay" class="modal-overlay" style="display:none"></div>
+  <div id="modal" class="modal" style="display:none"></div>
+
+  <!-- 方案B: 构建时生成的 config.js -->
+  <script src="config.js"></script>
+
+  <!-- 方案A/C/D 的运行时注入: 通过 __APP_CONFIG__ 读取配置 -->
+  <script>
+    var API_BASE = (window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE)
+      || '__API_BASE__'
+      || '/api/v1';
+  </script>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

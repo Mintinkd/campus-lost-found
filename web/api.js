@@ -1,4 +1,18 @@
-const API_BASE = window.API_BASE || '/api/v1';
+function resolveApiBase() {
+  if (window.__APP_CONFIG__ && window.__APP_CONFIG__.API_BASE) {
+    return window.__APP_CONFIG__.API_BASE;
+  }
+  if (window.API_BASE) {
+    return window.API_BASE;
+  }
+  var scripts = document.querySelectorAll('script[data-api-base]');
+  if (scripts.length > 0 && scripts[0].dataset.apiBase) {
+    return scripts[0].dataset.apiBase;
+  }
+  return '/api/v1';
+}
+
+var API_BASE = resolveApiBase();
 
 let token = localStorage.getItem('token') || '';
 let currentUser = null;
