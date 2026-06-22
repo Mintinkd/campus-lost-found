@@ -113,7 +113,7 @@ async function getClaims(userId, type = 'my_claims', page = 1, pageSize = 20) {
       { model: Item, as: 'item', attributes: ['id', 'category', 'location', 'photos', 'status'] },
       { model: User, as: 'claimer', attributes: ['id', 'nickname', 'avatarUrl'] }
     ],
-    order: [['created_at', 'DESC']],
+    order: [['createdAt', 'DESC']],
     limit: pageSize,
     offset: (page - 1) * pageSize
   });

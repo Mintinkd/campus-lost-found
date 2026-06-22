@@ -116,7 +116,7 @@ async function getMyItems(finderId, page = 1, pageSize = 20) {
   const { count, rows } = await Item.findAndCountAll({
     where: { finderId },
     include: [{ model: Claim, as: 'claims' }],
-    order: [['created_at', 'DESC']],
+    order: [['createdAt', 'DESC']],
     limit: pageSize,
     offset: (page - 1) * pageSize
   });

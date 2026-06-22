@@ -93,8 +93,8 @@ async function startServer() {
       await sequelize.sync({ alter: true });
       console.log('数据库同步完成(开发模式: alter=true)');
     } else {
-      await sequelize.sync();
-      console.log('数据库同步完成(生产模式)');
+      await sequelize.sync({ alter: true });
+      console.log('数据库同步完成(生产模式: alter=true)');
     }
 
     const schedule = require('node-schedule');

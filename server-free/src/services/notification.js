@@ -182,7 +182,7 @@ async function retryPush(notificationId) {
 async function getUserNotifications(userId, page = 1, pageSize = 20) {
   const { count, rows } = await Notification.findAndCountAll({
     where: { userId },
-    order: [['created_at', 'DESC']],
+    order: [['createdAt', 'DESC']],
     limit: pageSize,
     offset: (page - 1) * pageSize
   });

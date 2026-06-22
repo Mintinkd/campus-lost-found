@@ -17,7 +17,7 @@ exports.getSearchHistory = async (req, res) => {
     const { page = 1, pageSize = 10 } = req.query;
     const { count, rows } = await SearchRecord.findAndCountAll({
       where: { ownerId: req.userId },
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
       limit: parseInt(pageSize),
       offset: (parseInt(page) - 1) * parseInt(pageSize)
     });

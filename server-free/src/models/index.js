@@ -6,7 +6,7 @@ const sequelizeOptions = {
   logging: config.nodeEnv === 'development' ? console.log : false,
   define: {
     timestamps: true,
-    underscored: false,
+    underscored: true,
     freezeTableName: true
   }
 };
@@ -45,24 +45,22 @@ const User = sequelize.define('User', {
   openid: { type: DataTypes.STRING(64), unique: true, allowNull: false },
   nickname: { type: DataTypes.STRING(100), allowNull: false, defaultValue: '用户' },
   avatarUrl: { type: DataTypes.STRING(500), allowNull: false, defaultValue: '' },
-  phoneEncrypted: { type: DataTypes.STRING(200), field: 'phone_encrypted' },
+  phoneEncrypted: { type: DataTypes.STRING(200) },
   email: { type: DataTypes.STRING(200) },
   password: { type: DataTypes.STRING(200) },
   campus: { type: DataTypes.STRING(100) }
 }, {
-  tableName: 'users',
-  createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  tableName: 'users'
 });
 
 const Item = sequelize.define('Item', {
   id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
-  finderId: { type: DataTypes.STRING(36), allowNull: false, field: 'finder_id' },
+  finderId: { type: DataTypes.STRING(36), allowNull: false },
   category: { type: DataTypes.STRING(50), allowNull: false },
   confidence: { type: DataTypes.DECIMAL(3, 2) },
   description: { type: DataTypes.TEXT },
   location: { type: DataTypes.STRING(100), allowNull: false },
-  foundTime: { type: DataTypes.DATE, allowNull: false, field: 'found_time' },
+  foundTime: { type: DataTypes.DATE, allowNull: false },
   photos: { type: types.JSON_T, allowNull: false, defaultValue: [] },
   status: {
     type: DataTypes.STRING(20),
@@ -72,8 +70,6 @@ const Item = sequelize.define('Item', {
   }
 }, {
   tableName: 'items',
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
   indexes: [
     { fields: ['category'] },
     { fields: ['location'] },
@@ -84,33 +80,30 @@ const Item = sequelize.define('Item', {
 
 const SearchRecord = sequelize.define('SearchRecord', {
   id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
-  ownerId: { type: DataTypes.STRING(36), allowNull: false, field: 'owner_id' },
-  searchText: { type: DataTypes.TEXT, allowNull: false, field: 'search_text' },
-  parsedDimensions: { type: types.JSON_T, field: 'parsed_dimensions' }
+  ownerId: { type: DataTypes.STRING(36), allowNull: false },
+  searchText: { type: DataTypes.TEXT, allowNull: false },
+  parsedDimensions: { type: types.JSON_T }
 }, {
   tableName: 'search_records',
-  createdAt: 'created_at',
   updatedAt: false,
   indexes: [{ fields: ['owner_id'] }]
 });
 
 const Claim = sequelize.define('Claim', {
   id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
-  itemId: { type: DataTypes.STRING(36), allowNull: false, field: 'item_id' },
-  claimerId: { type: DataTypes.STRING(36), allowNull: false, field: 'claimer_id' },
-  claimReason: { type: DataTypes.STRING(500), allowNull: false, field: 'claim_reason' },
+  itemId: { type: DataTypes.STRING(36), allowNull: false },
+  claimerId: { type: DataTypes.STRING(36), allowNull: false },
+  claimReason: { type: DataTypes.STRING(500), allowNull: false },
   status: {
     type: DataTypes.STRING(20),
     defaultValue: 'pending',
     allowNull: false,
     validate: { isIn: [['pending', 'confirmed', 'returning', 'completed', 'rejected', 'expired']] }
   },
-  confirmedAt: { type: DataTypes.DATE, field: 'confirmed_at' },
-  returnedAt: { type: DataTypes.DATE, field: 'returned_at' }
+  confirmedAt: { type: DataTypes.DATE },
+  returnedAt: { type: DataTypes.DATE }
 }, {
   tableName: 'claims',
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
   indexes: [
     { fields: ['item_id'] },
     { fields: ['claimer_id'] },
@@ -120,12 +113,12 @@ const Claim = sequelize.define('Claim', {
 
 const Notification = sequelize.define('Notification', {
   id: { type: DataTypes.STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
-  userId: { type: DataTypes.STRING(36), allowNull: false, field: 'user_id' },
+  userId: { type: DataTypes.STRING(36), allowNull: false },
   type: { type: DataTypes.STRING(50), allowNull: false },
   title: { type: DataTypes.STRING(200), allowNull: false },
   content: { type: types.JSON_T, allowNull: false },
-  isRead: { type: DataTypes.BOOLEAN, defaultValue: false, field: 'is_read' },
-  retryCount: { type: DataTypes.INTEGER, defaultValue: 0, field: 'retry_count' },
+  isRead: { type: DataTypes.BOOLEAN, defaultValue: false },
+  retryCount: { type: DataTypes.INTEGER, defaultValue: 0 },
   status: {
     type: DataTypes.STRING(20),
     defaultValue: 'pending',
@@ -134,7 +127,6 @@ const Notification = sequelize.define('Notification', {
   }
 }, {
   tableName: 'notifications',
-  createdAt: 'created_at',
   updatedAt: false,
   indexes: [
     { fields: ['user_id'] },
