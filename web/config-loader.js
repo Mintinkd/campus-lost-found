@@ -83,13 +83,23 @@
       ? window.__APP_CONFIG__.API_BASE
       : DEFAULTS.API_BASE;
 
+    if (!apiBase || apiBase === '/api/v1') {
+      return Promise.resolve(window.__APP_CONFIG__);
+    }
+
     var controller = new AbortController();
     var timeout = setTimeout(function () { controller.abort(); }, 3000);
 
     return fetch(apiBase + '/config/client', { signal: controller.signal })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
+      .then(function (res) {
         clearTimeout(timeout);
+        if (!res.ok) {
+          console.warn('[ConfigLoader] 后端配置接口返回 ' + res.status);
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (data) {
         if (data && data.code === 0 && data.data) {
           var sanitized = sanitizeConfig(data.data);
           for (var k in sanitized) {

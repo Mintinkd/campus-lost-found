@@ -9,6 +9,19 @@ function getApiBase() {
 }
 
 var API_BASE = getApiBase();
+var _appReady = false;
+var _readyCallbacks = [];
+
+function onAppReady(cb) {
+  if (_appReady) cb();
+  else _readyCallbacks.push(cb);
+}
+
+function markAppReady() {
+  _appReady = true;
+  _readyCallbacks.forEach(function(cb) { cb(); });
+  _readyCallbacks = [];
+}
 
 let token = localStorage.getItem('token') || '';
 let currentUser = null;
@@ -18,10 +31,23 @@ async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch (networkErr) {
+    throw new Error('网络连接失败，请检查网络或后端服务是否启动');
+  }
 
   if (res.status === 502) {
     throw new Error('服务暂时不可用(502)，请稍后重试');
+  }
+
+  if (!res.ok && res.headers.get('content-type') && !res.headers.get('content-type').includes('application/json')) {
+    var errorText = await res.text().catch(function() { return ''; });
+    if (res.status === 404) {
+      throw new Error('API地址不存在(404)，请检查API_BASE配置: ' + API_BASE);
+    }
+    throw new Error('请求失败(' + res.status + '): ' + errorText.substring(0, 200));
   }
 
   const data = await res.json();
@@ -41,11 +67,16 @@ async function apiUpload(path, formData) {
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers,
-    body: formData
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+  } catch (networkErr) {
+    throw new Error('网络连接失败，请检查网络或后端服务是否启动');
+  }
 
   if (res.status === 502) {
     throw new Error('服务暂时不可用(502)，请稍后重试');
@@ -94,7 +125,10 @@ async function loadProfile() {
     currentUser = await api('/auth/profile');
     updateAuthUI();
   } catch (e) {
-    logout();
+    token = '';
+    localStorage.removeItem('token');
+    currentUser = null;
+    updateAuthUI();
   }
 }
 

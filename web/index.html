@@ -51,9 +51,20 @@
   <script src="app.js"></script>
 
   <script>
-    __ConfigLoader.init().then(function() {
-      API_BASE = __ConfigLoader.get('API_BASE');
+    __ConfigLoader.init().then(function(config) {
+      API_BASE = config.API_BASE || getApiBase();
       console.log('[App] 配置加载完成, API_BASE=' + API_BASE);
+      loadProfile().then(function() {
+        navigate('home');
+        markAppReady();
+      }).catch(function() {
+        navigate('home');
+        markAppReady();
+      });
+    }).catch(function(err) {
+      console.warn('[App] 配置加载失败，使用默认配置:', err);
+      navigate('home');
+      markAppReady();
     });
   </script>
 </body>
