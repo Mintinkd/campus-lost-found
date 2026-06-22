@@ -13,8 +13,7 @@
   var ALLOWED_KEYS = Object.keys(DEFAULTS);
 
   var SENSITIVE_PATTERNS = [
-    /password/i, /secret/i, /key/i, /token/i,
-    /private/i, /credential/i, /auth.*header/i
+    /password/i, /secret/i, /private/i, /credential/i
   ];
 
   function isSensitiveKey(key) {
