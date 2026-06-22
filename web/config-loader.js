@@ -63,52 +63,14 @@
     }
     var meta = document.querySelector('meta[name="api-base"]');
     if (meta && meta.content) return meta.content;
-    var base = document.querySelector('base');
-    if (base && base.href) return new URL('/api/v1', base.href).href;
-    return '';
-  }
-
-  function probeBackend(apiBase) {
-    if (!apiBase) return Promise.resolve(null);
-    var url = apiBase.replace(/\/+$/, '') + '/health';
-    var controller = new AbortController();
-    var timeout = setTimeout(function () { controller.abort(); }, 5000);
-
-    return fetch(url, { signal: controller.signal, mode: 'cors' })
-      .then(function (res) {
-        clearTimeout(timeout);
-        if (res.ok) return res.json();
-        return null;
-      })
-      .then(function (data) {
-        if (data && data.code === 0) return apiBase;
-        return null;
-      })
-      .catch(function () {
-        clearTimeout(timeout);
-        return null;
-      });
+    return new URL('/api/v1', window.location.origin).href;
   }
 
   function init() {
     var config = mergeConfig();
     var apiBase = config.API_BASE || detectApiBase();
-
-    if (apiBase) {
-      return probeBackend(apiBase).then(function (validBase) {
-        if (validBase) {
-          config.API_BASE = validBase;
-          window.__APP_CONFIG__ = Object.freeze(config);
-          return config;
-        }
-        console.warn('[Config] 后端不可达: ' + apiBase);
-        config.API_BASE = '';
-        config._backendUnreachable = true;
-        window.__APP_CONFIG__ = Object.freeze(config);
-        return config;
-      });
-    }
-
+    config.API_BASE = apiBase;
+    window.__APP_CONFIG__ = Object.freeze(config);
     return Promise.resolve(config);
   }
 

@@ -2,7 +2,7 @@ export async function onRequestGet(context) {
   const { env, request } = context;
 
   const config = {
-    API_BASE: env.API_BASE || '/api/v1',
+    API_BASE: env.API_BASE || 'https://campus-lost-found-3ywr.onrender.com/api/v1',
     APP_NAME: env.APP_NAME || '校园失物招领'
   };
 

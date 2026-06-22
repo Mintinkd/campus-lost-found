@@ -24,6 +24,42 @@ function markAppReady() {
 let token = localStorage.getItem('token') || '';
 let currentUser = null;
 
+var _wakingBackend = null;
+
+function wakeBackend(url) {
+  if (_wakingBackend) return _wakingBackend;
+  _wakingBackend = new Promise(function(resolve) {
+    var tries = 0;
+    var maxTries = 6;
+    var delay = 3000;
+
+    function attempt() {
+      tries++;
+      fetch(url, { method: 'GET', mode: 'cors' }).then(function(res) {
+        if (res.ok || res.status === 401 || res.status === 404) {
+          _wakingBackend = null;
+          resolve(true);
+        } else if (tries < maxTries) {
+          setTimeout(attempt, delay);
+        } else {
+          _wakingBackend = null;
+          resolve(false);
+        }
+      }).catch(function() {
+        if (tries < maxTries) {
+          setTimeout(attempt, delay);
+        } else {
+          _wakingBackend = null;
+          resolve(false);
+        }
+      });
+    }
+
+    attempt();
+  });
+  return _wakingBackend;
+}
+
 async function api(path, options) {
   options = options || {};
   API_BASE = getApiBase();
@@ -46,12 +82,35 @@ async function api(path, options) {
   try {
     res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
   } catch (networkErr) {
-    showBackendConfigError();
-    throw new Error('无法连接后端服务: ' + url);
+    var woke = await wakeBackend(url);
+    if (woke) {
+      try {
+        res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
+      } catch (e) {
+        showBackendConfigError();
+        throw new Error('无法连接后端服务: ' + API_BASE);
+      }
+    } else {
+      showBackendConfigError();
+      throw new Error('无法连接后端服务: ' + API_BASE);
+    }
   }
 
   if (res.status === 502 || res.status === 503) {
-    throw new Error('服务暂时不可用(' + res.status + ')，请稍后重试');
+    showWakingBackend();
+    var woke = await wakeBackend(url);
+    if (woke) {
+      try {
+        res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
+      } catch (e) {
+        throw new Error('后端服务唤醒后仍无法访问');
+      }
+      if (res.status === 502 || res.status === 503) {
+        throw new Error('后端服务正在启动，请稍后刷新页面重试');
+      }
+    } else {
+      throw new Error('后端服务暂时不可用，请稍后重试');
+    }
   }
 
   var contentType = res.headers.get('content-type') || '';
@@ -97,7 +156,18 @@ async function apiUpload(path, formData) {
   }
 
   if (res.status === 502 || res.status === 503) {
-    throw new Error('服务暂时不可用');
+    showWakingBackend();
+    var woke = await wakeBackend(url);
+    if (woke) {
+      res = await fetch(url, { method: 'POST', headers: headers, body: formData });
+    } else {
+      throw new Error('后端服务暂时不可用');
+    }
+  }
+
+  var contentType = res.headers.get('content-type') || '';
+  if (contentType.indexOf('application/json') === -1) {
+    throw new Error('上传响应异常(' + res.status + ')');
   }
 
   var data = await res.json();
@@ -109,7 +179,7 @@ function showBackendConfigError() {
   var app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = '<div class="card" style="text-align:center;padding:40px">' +
-    '<h2 style="color:#FA5151;margin-bottom:16px">⚠️ 后端服务未连接</h2>' +
+    '<h2 style="color:#FA5151;margin-bottom:16px">\u26a0\ufe0f 后端服务未连接</h2>' +
     '<p style="color:#666;margin-bottom:12px">前端无法连接到后端 API，请检查以下配置：</p>' +
     '<div style="text-align:left;background:#f5f5f5;padding:16px;border-radius:8px;font-size:14px;color:#333">' +
     '<p><strong>1. 确认后端服务已启动</strong></p>' +
@@ -121,6 +191,19 @@ function showBackendConfigError() {
     '</div>' +
     '<button class="btn btn-primary" style="margin-top:16px" onclick="location.reload()">重新加载</button>' +
     '</div>';
+}
+
+function showWakingBackend() {
+  var app = document.getElementById('app');
+  if (!app) return;
+  var existing = app.querySelector('.waking-notice');
+  if (existing) return;
+  var notice = document.createElement('div');
+  notice.className = 'waking-notice';
+  notice.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#FFF3E0;color:#E65100;padding:10px 20px;border-radius:8px;font-size:14px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.15)';
+  notice.textContent = '\u23f3 后端服务正在唤醒中，请稍候...';
+  document.body.appendChild(notice);
+  setTimeout(function() { if (notice.parentNode) notice.parentNode.removeChild(notice); }, 30000);
 }
 
 async function login(email, password) {

@@ -19,15 +19,14 @@
   <!--
     ★★★ 关键: 在这里配置后端 API 地址 ★★★
     本地开发:       http://localhost:3000/api/v1
-    Render部署:     https://your-app.onrender.com/api/v1
-    如果不设置, 默认使用 /api/v1 (需要反向代理)
+    Render部署:     https://campus-lost-found-3ywr.onrender.com/api/v1
+    如果不设置, 将自动探测同域 /api/v1
   -->
   <script>
     window.__APP_CONFIG__ = window.__APP_CONFIG__ || {};
-    window.__APP_CONFIG__.API_BASE = window.__APP_CONFIG__.API_BASE || '';
+    window.__APP_CONFIG__.API_BASE = window.__APP_CONFIG__.API_BASE || 'https://campus-lost-found-3ywr.onrender.com/api/v1';
   </script>
 
-  <!-- 方案A/B: 从 /config.js 覆盖配置 -->
   <script src="/config.js" onerror="void(0)"></script>
 
   <!-- 配置加载器 -->
