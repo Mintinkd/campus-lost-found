@@ -56,7 +56,7 @@ async function renderHome() {
       return '<div class="card item-card" onclick="showDetail(\'' + item.id + '\')">' +
         '<div class="item-photo">' +
         (item.photos && item.photos.length > 0
-          ? '<img src="' + item.photos[0] + '" alt="' + item.category + '">'
+          ? '<img src="' + resolveUrl(item.photos[0]) + '" alt="' + item.category + '">'
           : '<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:40px">📦</div>') +
         '</div>' +
         '<div class="item-meta"><span class="tag">' + item.category + '</span> <span class="status-badge status-' + item.status + '">' + statusText(item.status) + '</span></div>' +
@@ -190,7 +190,7 @@ async function doSearch() {
       result.results.map(function(r) {
         return '<div class="card result-card" onclick="showDetail(\'' + r.item.id + '\')">' +
           '<div class="result-photo">' +
-          (r.item.photos && r.item.photos.length > 0 ? '<img src="' + r.item.photos[0] + '">' : '<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:32px">📦</div>') +
+          (r.item.photos && r.item.photos.length > 0 ? '<img src="' + resolveUrl(r.item.photos[0]) + '">' : '<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:32px">📦</div>') +
           '</div><div class="result-info">' +
           '<div class="result-meta"><span class="tag">' + r.item.category + '</span> <span class="match-score">' + r.matchScore + '% 匹配</span></div>' +
           '<div class="result-location">📍 ' + r.item.location + '</div>' +
@@ -209,7 +209,7 @@ async function showDetail(id) {
     var isOwner = currentUser && item.finderId === currentUser.id;
     var canClaim = !isOwner && (item.status === 'pending' || item.status === 'claiming');
     var html = '<h3>物品详情</h3>';
-    if (item.photos && item.photos.length > 0) html += '<div class="detail-photos"><img src="' + item.photos[0] + '"></div>';
+    if (item.photos && item.photos.length > 0) html += '<div class="detail-photos"><img src="' + resolveUrl(item.photos[0]) + '"></div>';
     html += '<div class="detail-row"><span class="detail-label">类别</span><span class="detail-value"><span class="tag">' + item.category + '</span> <span class="status-badge status-' + item.status + '">' + statusText(item.status) + '</span></span></div>';
     html += '<div class="detail-row"><span class="detail-label">地点</span><span class="detail-value">📍 ' + item.location + '</span></div>';
     html += '<div class="detail-row"><span class="detail-label">时间</span><span class="detail-value">🕐 ' + formatTime(item.foundTime) + '</span></div>';

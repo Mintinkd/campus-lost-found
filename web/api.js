@@ -7,6 +7,14 @@ function getApiBase() {
 }
 
 var API_BASE = getApiBase();
+
+function resolveUrl(url) {
+  if (!url) return url;
+  if (url.indexOf('://') !== -1) return url;
+  if (url.indexOf('//') === 0) return url;
+  var base = API_BASE.replace(/\/+$/, '').replace(/\/api\/v\d+$/, '');
+  return base + (url.charAt(0) === '/' ? '' : '/') + url;
+}
 var _appReady = false;
 var _readyCallbacks = [];
 
