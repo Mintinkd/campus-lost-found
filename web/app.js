@@ -318,7 +318,11 @@ __ConfigLoader.init().then(function(config) {
   API_BASE = config.API_BASE || '';
   window.API_BASE = API_BASE;
   console.log('[App] 启动, API_BASE=' + (API_BASE || '(未配置)'));
-  loadProfile().then(function() { navigate('home'); }).catch(function() { navigate('home'); });
+  if (token) {
+    loadProfile().then(function() { navigate('home'); }).catch(function() { navigate('home'); });
+  } else {
+    navigate('home');
+  }
 }).catch(function(err) {
   console.warn('[App] 配置加载失败:', err);
   API_BASE = getApiBase();

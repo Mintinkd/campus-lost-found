@@ -12,7 +12,8 @@ function resolveUrl(url) {
   if (!url) return url;
   if (url.indexOf('://') !== -1) return url;
   if (url.indexOf('//') === 0) return url;
-  var base = API_BASE.replace(/\/+$/, '').replace(/\/api\/v\d+$/, '');
+  var base = (API_BASE || getApiBase() || '').replace(/\/+$/, '').replace(/\/api\/v\d+$/, '');
+  if (!base) return url;
   return base + (url.charAt(0) === '/' ? '' : '/') + url;
 }
 var _appReady = false;
@@ -34,8 +35,9 @@ let currentUser = null;
 
 var _wakingBackend = null;
 
-function wakeBackend(url) {
+function wakeBackend(apiBase) {
   if (_wakingBackend) return _wakingBackend;
+  var healthUrl = apiBase.replace(/\/+$/, '').replace(/\/api\/v\d+.*$/, '') + '/api/v1/health';
   _wakingBackend = new Promise(function(resolve) {
     var tries = 0;
     var maxTries = 6;
@@ -43,8 +45,8 @@ function wakeBackend(url) {
 
     function attempt() {
       tries++;
-      fetch(url, { method: 'GET', mode: 'cors' }).then(function(res) {
-        if (res.ok || res.status === 401 || res.status === 404) {
+      fetch(healthUrl, { method: 'GET', mode: 'cors' }).then(function(res) {
+        if (res.ok) {
           _wakingBackend = null;
           resolve(true);
         } else if (tries < maxTries) {
@@ -90,7 +92,7 @@ async function api(path, options) {
   try {
     res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
   } catch (networkErr) {
-    var woke = await wakeBackend(url);
+    var woke = await wakeBackend(API_BASE);
     if (woke) {
       try {
         res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
@@ -106,7 +108,7 @@ async function api(path, options) {
 
   if (res.status === 502 || res.status === 503) {
     showWakingBackend();
-    var woke = await wakeBackend(url);
+    var woke = await wakeBackend(API_BASE);
     if (woke) {
       try {
         res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
@@ -139,6 +141,9 @@ async function api(path, options) {
     localStorage.removeItem('token');
     currentUser = null;
     updateAuthUI();
+    if (currentPage !== 'home') {
+      showLogin();
+    }
   }
 
   throw new Error(data.message || '请求失败(code:' + data.code + ')');
@@ -165,7 +170,7 @@ async function apiUpload(path, formData) {
 
   if (res.status === 502 || res.status === 503) {
     showWakingBackend();
-    var woke = await wakeBackend(url);
+    var woke = await wakeBackend(API_BASE);
     if (woke) {
       res = await fetch(url, { method: 'POST', headers: headers, body: formData });
     } else {
