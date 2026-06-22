@@ -291,7 +291,11 @@ function updateAuthUI() {
     userInfo.style.display = 'inline';
     btnLogin.style.display = 'none';
     btnLogout.style.display = 'inline';
-    if (adminLink) adminLink.style.display = currentUser.roleId ? 'inline' : 'none';
+    if (adminLink) {
+      var isAdm = !!currentUser.roleId;
+      adminLink.style.display = isAdm ? 'inline' : 'none';
+      console.log('[Auth] 管理员状态:', isAdm, 'roleId:', currentUser.roleId);
+    }
   } else {
     userInfo.style.display = 'none';
     btnLogin.style.display = 'inline';

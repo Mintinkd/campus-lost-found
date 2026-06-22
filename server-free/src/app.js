@@ -159,6 +159,9 @@ async function startServer() {
         roleId: superAdminRole.id
       });
       console.log(`[Init] 创建管理员账号: ${adminEmail}`);
+    } else if (!existingAdmin.roleId) {
+      await existingAdmin.update({ roleId: superAdminRole.id });
+      console.log(`[Init] 已为 ${adminEmail} 分配管理员角色`);
     }
 
     uploadService.initCloudinary();
