@@ -18,6 +18,7 @@ const configRouter = require('./routes/config');
 
 const itemService = require('./services/item');
 const claimService = require('./services/claim');
+const uploadService = require('./services/upload');
 
 const app = express();
 
@@ -127,6 +128,8 @@ async function startServer() {
 
     await sequelize.sync({ alter: true });
     console.log('数据库同步完成');
+
+    uploadService.initCloudinary();
 
     const schedule = require('node-schedule');
     schedule.scheduleJob('0 2 * * *', async () => {

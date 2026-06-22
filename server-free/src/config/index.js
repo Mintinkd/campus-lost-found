@@ -43,7 +43,8 @@ module.exports = {
   upload: {
     provider: process.env.UPLOAD_PROVIDER || 'local',
     dir: process.env.UPLOAD_DIR || './uploads',
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760,
+    cloudinaryUrl: process.env.CLOUDINARY_URL || ''
   },
   encryption: {
     key: process.env.ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef',

@@ -40,8 +40,8 @@ function wakeBackend(apiBase) {
   var healthUrl = apiBase.replace(/\/+$/, '').replace(/\/api\/v\d+.*$/, '') + '/api/v1/health';
   _wakingBackend = new Promise(function(resolve) {
     var tries = 0;
-    var maxTries = 6;
-    var delay = 3000;
+    var maxTries = 4;
+    var delay = 2000;
 
     function attempt() {
       tries++;
@@ -88,22 +88,36 @@ async function api(path, options) {
   }
   if (token) headers['Authorization'] = 'Bearer ' + token;
 
+  var controller = new AbortController();
+  var timeout = setTimeout(function() { controller.abort(); }, 15000);
+  var fetchOptions = { method: options.method || 'GET', headers: headers, signal: controller.signal };
+  if (options.body) fetchOptions.body = options.body;
+
   var res;
   try {
-    res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
+    res = await fetch(url, fetchOptions);
   } catch (networkErr) {
+    clearTimeout(timeout);
+    if (networkErr.name === 'AbortError') {
+      throw new Error('请求超时(15秒)，后端可能正在唤醒');
+    }
     var woke = await wakeBackend(API_BASE);
     if (woke) {
       try {
-        res = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
+        var ctrl2 = new AbortController();
+        var t2 = setTimeout(function() { ctrl2.abort(); }, 15000);
+        var fo2 = { method: options.method || 'GET', headers: headers, signal: ctrl2.signal };
+        if (options.body) fo2.body = options.body;
+        res = await fetch(url, fo2);
+        clearTimeout(t2);
       } catch (e) {
-        showBackendConfigError();
         throw new Error('无法连接后端服务: ' + API_BASE);
       }
     } else {
-      showBackendConfigError();
       throw new Error('无法连接后端服务: ' + API_BASE);
     }
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (res.status === 502 || res.status === 503) {
@@ -257,6 +271,7 @@ async function loadProfile() {
     currentUser = await api('/auth/profile');
     updateAuthUI();
   } catch (e) {
+    if (e.message.indexOf('超时') !== -1 || e.message.indexOf('无法连接') !== -1) return;
     token = '';
     localStorage.removeItem('token');
     currentUser = null;

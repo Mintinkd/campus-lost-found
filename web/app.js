@@ -45,8 +45,16 @@ async function renderHome() {
     return;
   }
 
+  var loadTimeout = setTimeout(function() {
+    var container = document.getElementById('recent-items');
+    if (container && container.querySelector('.icon') && container.querySelector('.icon').textContent === '⏳') {
+      container.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><div>后端服务唤醒中，请稍候...<br><button class="btn btn-primary" style="margin-top:12px" onclick="renderHome()">刷新</button></div></div>';
+    }
+  }, 8000);
+
   try {
     var data = await api('/items?pageSize=12&status=pending');
+    clearTimeout(loadTimeout);
     var container = document.getElementById('recent-items');
     if (!data.list || data.list.length === 0) {
       container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>暂无拾物信息</div></div>';
@@ -65,8 +73,9 @@ async function renderHome() {
         '</div>';
     }).join('');
   } catch (e) {
+    clearTimeout(loadTimeout);
     document.getElementById('recent-items').innerHTML =
-      '<div class="empty-state"><div class="icon">⚠️</div><div>加载失败: ' + e.message + '</div></div>';
+      '<div class="empty-state"><div class="icon">⚠️</div><div>加载失败: ' + e.message + '<br><button class="btn btn-primary" style="margin-top:12px" onclick="renderHome()">重试</button></div></div>';
   }
 }
 
@@ -318,10 +327,9 @@ __ConfigLoader.init().then(function(config) {
   API_BASE = config.API_BASE || '';
   window.API_BASE = API_BASE;
   console.log('[App] 启动, API_BASE=' + (API_BASE || '(未配置)'));
+  navigate('home');
   if (token) {
-    loadProfile().then(function() { navigate('home'); }).catch(function() { navigate('home'); });
-  } else {
-    navigate('home');
+    loadProfile().catch(function() {});
   }
 }).catch(function(err) {
   console.warn('[App] 配置加载失败:', err);

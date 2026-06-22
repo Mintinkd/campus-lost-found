@@ -1,5 +1,6 @@
 const itemService = require('../services/item');
 const imageRecognitionService = require('../services/imageRecognition');
+const uploadService = require('../services/upload');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -29,9 +30,26 @@ const upload = multer({
 
 exports.uploadMiddleware = upload.array('photos', 5);
 
+async function resolvePhotoUrls(files) {
+  if (!files || files.length === 0) return [];
+  const urls = [];
+  for (const f of files) {
+    if (uploadService.isAvailable()) {
+      const cloudUrl = await uploadService.uploadToCloudinary(f.path, 'items');
+      if (cloudUrl) {
+        urls.push(cloudUrl);
+        try { fs.unlinkSync(f.path); } catch (e) { /* ignore */ }
+        continue;
+      }
+    }
+    urls.push(`/uploads/${f.filename}`);
+  }
+  return urls;
+}
+
 exports.createItem = async (req, res) => {
   try {
-    const photos = req.files ? req.files.map(f => `/uploads/${f.filename}`) : [];
+    const photos = await resolvePhotoUrls(req.files);
     const { category, description, location, foundTime } = req.body;
 
     if (!location) return res.error(2001, '拾到地点为必填项');
@@ -49,7 +67,7 @@ exports.createItem = async (req, res) => {
 
 exports.recognizeAndCreate = async (req, res) => {
   try {
-    const photos = req.files ? req.files.map(f => `/uploads/${f.filename}`) : [];
+    const photos = await resolvePhotoUrls(req.files);
     const { description, location, foundTime, category } = req.body;
 
     if (!location) return res.error(2001, '拾到地点为必填项');
@@ -58,7 +76,14 @@ exports.recognizeAndCreate = async (req, res) => {
 
     let imageBase64 = null;
     if (req.files && req.files.length > 0) {
-      imageBase64 = fs.readFileSync(req.files[0].path).toString('base64');
+      const localFile = req.files.find(f => fs.existsSync(f.path));
+      if (localFile) {
+        imageBase64 = fs.readFileSync(localFile.path).toString('base64');
+      } else if (photos[0] && uploadService.isCloudinaryUrl(photos[0])) {
+        const axios = require('axios');
+        const resp = await axios.get(photos[0], { responseType: 'arraybuffer' });
+        imageBase64 = Buffer.from(resp.data, 'binary').toString('base64');
+      }
     }
 
     const result = await itemService.recognizeAndCreate(req.userId, imageBase64, {
