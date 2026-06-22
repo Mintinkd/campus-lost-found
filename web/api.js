@@ -283,6 +283,7 @@ function updateAuthUI() {
   var userInfo = document.getElementById('user-info');
   var btnLogin = document.getElementById('btn-login');
   var btnLogout = document.getElementById('btn-logout');
+  var adminLink = document.getElementById('admin-link');
   if (!userInfo || !btnLogin || !btnLogout) return;
 
   if (currentUser) {
@@ -290,10 +291,12 @@ function updateAuthUI() {
     userInfo.style.display = 'inline';
     btnLogin.style.display = 'none';
     btnLogout.style.display = 'inline';
+    if (adminLink) adminLink.style.display = currentUser.roleId ? 'inline' : 'none';
   } else {
     userInfo.style.display = 'none';
     btnLogin.style.display = 'inline';
     btnLogout.style.display = 'none';
+    if (adminLink) adminLink.style.display = 'none';
   }
 }
 
@@ -360,4 +363,32 @@ async function doLogin() {
   } catch (e) {
     alert(e.message);
   }
+}
+
+function isAdmin() {
+  return currentUser && currentUser.roleId;
+}
+
+async function adminHideItem(id) {
+  if (!confirm('确认隐藏该物品？隐藏后普通用户将无法看到。')) return;
+  try {
+    await api('/admin/items/' + id + '/hide', { method: 'PUT' });
+    alert('已隐藏'); hideModal(); navigate('home');
+  } catch (e) { alert('操作失败: ' + e.message); }
+}
+
+async function adminDeleteItem(id) {
+  if (!confirm('确认删除该物品？此为软删除，可在管理后台恢复。')) return;
+  try {
+    await api('/admin/items/' + id + '/soft', { method: 'DELETE' });
+    alert('已删除'); hideModal(); navigate('home');
+  } catch (e) { alert('操作失败: ' + e.message); }
+}
+
+async function adminApproveItem(id) {
+  if (!confirm('确认恢复该物品？')) return;
+  try {
+    await api('/admin/items/' + id + '/approve', { method: 'PUT' });
+    alert('已恢复'); hideModal(); navigate('home');
+  } catch (e) { alert('操作失败: ' + e.message); }
 }

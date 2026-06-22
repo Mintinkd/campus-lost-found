@@ -239,6 +239,16 @@ async function showDetail(id) {
     }
     html += '<div class="modal-actions"><button class="btn btn-outline" onclick="hideModal()">关闭</button>';
     if (canClaim) html += '<button class="btn btn-primary" onclick="submitClaim(\'' + item.id + '\')">我要认领</button>';
+    if (isAdmin()) {
+      html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee"><div style="font-size:12px;color:#999;margin-bottom:8px">管理员操作</div>';
+      if (item.status !== 'hidden') {
+        html += '<button class="btn btn-sm" style="margin-right:8px" onclick="adminHideItem(\'' + item.id + '\')">隐藏</button>';
+        html += '<button class="btn btn-sm btn-danger" onclick="adminDeleteItem(\'' + item.id + '\')">删除</button>';
+      } else {
+        html += '<button class="btn btn-sm btn-primary" onclick="adminApproveItem(\'' + item.id + '\')">恢复显示</button>';
+      }
+      html += '</div>';
+    }
     html += '</div>';
     showModal(html);
   } catch (e) { alert('加载失败: ' + e.message); }
