@@ -86,19 +86,41 @@ app.use((err, req, res, next) => {
 
 async function startServer() {
   try {
+    if (config.nodeEnv === 'production') {
+      const warnings = [];
+      if (config.jwt.secret === 'dev_secret_change_me') warnings.push('JWT_SECRET 未设置，使用不安全默认值');
+      if (config.encryption.key === '0123456789abcdef0123456789abcdef') warnings.push('ENCRYPTION_KEY 未设置，使用不安全默认值');
+      if (config.encryption.iv === '0123456789abcdef') warnings.push('ENCRYPTION_IV 未设置，使用不安全默认值');
+      if (warnings.length > 0) {
+        console.warn('⚠️ 生产环境安全警告:');
+        warnings.forEach(w => console.warn('  - ' + w));
+        console.warn('  请在 Render Dashboard → Environment 中设置上述环境变量');
+      }
+    }
+
     await sequelize.authenticate();
     console.log(`数据库连接成功 (${config.db.dialect})`);
 
     if (config.db.dialect === 'postgres') {
       const [results] = await sequelize.query(
-        "SELECT column_name FROM information_schema.columns WHERE table_name = 'users' LIMIT 1"
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name NOT IN ('id') ORDER BY ordinal_position LIMIT 5"
       );
       if (results.length > 0) {
-        const col = results[0].column_name;
-        if (col === col.toLowerCase() && col.indexOf('_') === -1) {
-          console.log('[DB] 检测到旧schema(驼峰列名)，重建表...');
-          await sequelize.drop();
-          console.log('[DB] 旧表已删除');
+        const needsRebuild = results.some(r => {
+          const col = r.column_name;
+          return col.indexOf('_') === -1 && col !== col.toUpperCase();
+        });
+        if (needsRebuild) {
+          console.error('❌ 检测到旧schema(驼峰列名)，需要重建数据库。');
+          console.error('   请设置环境变量 FORCE_SCHEMA_REBUILD=true 后重新部署');
+          console.error('   警告: 重建将删除所有数据!');
+          if (process.env.FORCE_SCHEMA_REBUILD === 'true') {
+            console.log('[DB] FORCE_SCHEMA_REBUILD=true，重建表...');
+            await sequelize.drop();
+            console.log('[DB] 旧表已删除');
+          } else {
+            console.warn('[DB] 跳过重建，使用现有schema。部分功能可能异常。');
+          }
         }
       }
     }
