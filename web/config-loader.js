@@ -68,9 +68,14 @@
   function init() {
     var config = mergeConfig();
     var apiBase = config.API_BASE || detectApiBase();
-    config.API_BASE = apiBase;
-    window.__APP_CONFIG__ = Object.freeze(config);
-    return Promise.resolve(config);
+    var finalConfig = {};
+    for (var key in config) {
+      if (!config.hasOwnProperty(key)) continue;
+      finalConfig[key] = config[key];
+    }
+    finalConfig.API_BASE = apiBase;
+    window.__APP_CONFIG__ = Object.freeze(finalConfig);
+    return Promise.resolve(finalConfig);
   }
 
   window.__ConfigLoader = {
