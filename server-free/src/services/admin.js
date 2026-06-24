@@ -1,4 +1,4 @@
-const { Item, User, Claim, AdminLog } = require('../models');
+const { Item, User, Claim, AdminLog, Role } = require('../models');
 const { Op } = require('sequelize');
 
 async function listAllItems({ page = 1, pageSize = 20, category, status, keyword, includeDeleted }) {
