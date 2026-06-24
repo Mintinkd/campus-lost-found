@@ -1,6 +1,6 @@
 var currentPage = 'home';
 
-document.querySelectorAll('.nav-link').forEach(function(link) {
+document.querySelectorAll('.nav-link[data-page]').forEach(function(link) {
   link.addEventListener('click', function(e) {
     e.preventDefault();
     navigate(link.dataset.page);
