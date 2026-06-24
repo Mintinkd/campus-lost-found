@@ -172,7 +172,7 @@ async function getDashboardStats() {
   const totalUsers = await User.count();
   const totalItems = await Item.count({ where: { deletedAt: null } });
   const pendingItems = await Item.count({ where: { status: 'pending', deletedAt: null } });
-  const hiddenItems = await Item.count({ where: { status: 'hidden' } });
+  const hiddenItems = await Item.count({ where: { status: 'hidden', deletedAt: null } });
   const deletedItems = await Item.count({ where: { deletedAt: { [Op.ne]: null } } });
   const bannedUsers = await User.count({ where: { isBanned: true } });
   const totalClaims = await Claim.count();
