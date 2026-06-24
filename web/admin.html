@@ -172,8 +172,11 @@
     var userPage = 1;
     async function loadUsers(c) {
       try {
-        var data = await api('/admin/users?page=' + userPage + '&pageSize=15');
+        var keyword = document.getElementById('user-keyword') ? document.getElementById('user-keyword').value : '';
+        var data = await api('/admin/users?page=' + userPage + '&pageSize=15&keyword=' + encodeURIComponent(keyword));
         c.innerHTML = '<div class="header"><h1>用户管理</h1></div>' +
+          '<div class="toolbar"><input id="user-keyword" placeholder="搜索昵称或邮箱..." value="' + keyword + '">' +
+          '<button class="btn btn-primary" onclick="userPage=1;loadUsers(document.getElementById(\'content\'))">搜索</button></div>' +
           '<div class="card"><table><thead><tr><th>ID</th><th>昵称</th><th>邮箱</th><th>角色</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead><tbody>' +
           data.list.map(function(u) {
             return '<tr><td style="font-size:12px">' + u.id.substring(0, 8) + '...</td><td>' + u.nickname + '</td><td>' + (u.email || '-') + '</td>' +
@@ -207,13 +210,20 @@
       try {
         var data = await api('/admin/logs?page=' + logPage + '&pageSize=20');
         c.innerHTML = '<div class="header"><h1>操作日志</h1></div>' +
-          '<div class="card"><table><thead><tr><th>管理员</th><th>操作</th><th>目标类型</th><th>目标ID</th><th>详情</th><th>时间</th></tr></thead><tbody>' +
-          data.list.map(function(l) {
+          '<div class="card"><table><thead><tr><th>管理员</th><th>操作</th><th>目标</th><th>详情</th><th>时间</th></tr></thead><tbody>' +
+          data.list.map(function(l, i) {
+            var detail = l.detail || '-';
+            var detailHtml = detail.length > 50
+              ? '<span id="log-detail-' + i + '">' + detail.substring(0, 50) + '... <a href="#" onclick="document.getElementById(\'log-detail-' + i + '\').innerHTML=decodeURIComponent(\'' + encodeURIComponent(detail) + '\');return false">展开</a></span>'
+              : detail;
             return '<tr><td>' + (l.admin ? l.admin.nickname : '-') + '</td><td><span class="badge badge-yellow">' + l.action + '</span></td>' +
-              '<td>' + l.targetType + '</td><td style="font-size:12px">' + l.targetId.substring(0, 8) + '...</td>' +
-              '<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (l.detail || '-') + '</td>' +
+              '<td style="font-size:12px">' + l.targetType + ' / ' + l.targetId.substring(0, 8) + '...</td>' +
+              '<td style="font-size:12px;max-width:300px;word-break:break-all">' + detailHtml + '</td>' +
               '<td style="font-size:12px">' + new Date(l.createdAt).toLocaleString() + '</td></tr>';
-          }).join('') + '</tbody></table></div>';
+          }).join('') + '</tbody></table></div>' +
+          '<div class="pagination">' + (logPage > 1 ? '<button class="btn" onclick="logPage--;loadLogs(document.getElementById(\'content\'))">上一页</button>' : '') +
+          '<span style="padding:8px">第 ' + logPage + ' 页 / 共 ' + Math.ceil(data.total / 20) + ' 页</span>' +
+          (logPage < Math.ceil(data.total / 20) ? '<button class="btn" onclick="logPage++;loadLogs(document.getElementById(\'content\'))">下一页</button>' : '') + '</div>';
       } catch (e) { c.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; }
     }
 
